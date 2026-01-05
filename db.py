@@ -1,0 +1,85 @@
+from datetime import date, datetime
+import os
+import sqlite3 as sql
+
+from time_slice import TimeSlice
+
+__DATA_DIRECTORY = "data"
+__DB_NAME = "time_slice.db"
+__TIME_SLICE_TABLE = "time_slice"
+
+
+def adapt_date_iso(val):
+    """Adapt datetime.date to ISO 8601 date."""
+    return val.isoformat()
+
+
+def __adapt_datetime_iso(val: datetime):
+    """Adapt datetime.datetime to timezone-naive ISO 8601 date."""
+    return val.replace(tzinfo=None).isoformat()
+
+
+def __convert_datetime(val: bytes):
+    """Convert ISO 8601 datetime to datetime.datetime object."""
+    return datetime.fromisoformat(val.decode())
+
+
+def convert_date(val):
+    """Convert ISO 8601 date to datetime.date object."""
+    return date.fromisoformat(val.decode())
+
+
+sql.register_adapter(date, adapt_date_iso)
+sql.register_adapter(datetime, __adapt_datetime_iso)
+sql.register_converter("datetime", __convert_datetime)
+sql.register_converter("date", convert_date)
+
+
+def __create_connection():
+    path = os.path.join(__DATA_DIRECTORY, __DB_NAME)
+    return sql.connect(path, detect_types=sql.PARSE_DECLTYPES)
+
+
+def __convert_rows_to_time_slices(rows: list[tuple]):
+    return [TimeSlice(*row) for row in rows]
+
+
+def ensure_table_created():
+    # PARSE_DECLTYPES so that the types given in the creating table syntax are enough for the converter/adapter methods to be called.
+    with __create_connection() as connection:
+        connection.execute(
+            f"CREATE TABLE IF NOT EXISTS {__TIME_SLICE_TABLE}(time_slice_id INTEGER PRIMARY KEY, created_at datetime, description TEXT, tag TEXT, duration INTEGER)"
+        )
+
+
+def add_time_slice(description: str, tag: str, duration_minutes: int):
+    with __create_connection() as connection:
+        connection.execute(
+            f"INSERT INTO {__TIME_SLICE_TABLE} (description, tag, duration, created_at) VALUES (?, ?, ?, ?)",
+            (description, tag, duration_minutes, datetime.now()),
+        )
+
+
+def get_time_slices_by_date(date: date) -> list[TimeSlice]:
+    with __create_connection() as connection:
+        # prevent silly mistakes, ensuring we only have the date part of what could be a datetime object (since datetime inherits from date)
+        if isinstance(date, datetime):
+            date = date.date()
+
+        return __convert_rows_to_time_slices(
+            connection.execute(
+                f"SELECT * FROM {__TIME_SLICE_TABLE} WHERE DATE(created_at)=?",
+                ((date),),
+            ).fetchall()
+        )
+
+
+def get_todays_time_slices():
+    return get_time_slices_by_date(datetime.now().date())
+
+
+def get_all_time_slices():
+    with __create_connection() as connection:
+        return __convert_rows_to_time_slices(
+            connection.execute(f"SELECT * FROM {__TIME_SLICE_TABLE}").fetchall()
+        )
