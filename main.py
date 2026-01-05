@@ -1,24 +1,30 @@
 import gi
 
-from total_times_widget import TotalTimesWidget
-
 gi.require_version("Gtk", "4.0")
 gi.require_version("Notify", "0.7")
+from gi.repository import Gtk, Notify
 
-from gi.repository import GLib, Gtk, Notify
 from time_slice_form_data import TimeSliceFormData
 from timer import Timer
+import db
+from total_times_widget import TotalTimesWidget
 
 Notify.init("Slice")
 
 TAGS = "Blender", "Musescore", "Quant"
 APP_NAME = "Slice ⏰🍕"
-total_times = {tag: 0 for tag in TAGS}
 
 
 class App(Gtk.Application):
     def __init__(self):
         super().__init__(application_id="com.ken.slice")
+        db.ensure_table_created()
+        self.update_times_by_tag()
+
+    def update_times_by_tag(self):
+        self.times_by_tag = {tag: 0 for tag in TAGS}
+        for tag, minutes in db.get_times_by_tag():
+            self.times_by_tag[tag] += minutes
 
     def do_activate(self) -> None:
         self.window = Gtk.ApplicationWindow(application=self)
@@ -33,7 +39,7 @@ class App(Gtk.Application):
         self.root.append(self.timer)
 
         self.total_times_widget = TotalTimesWidget()
-        self.total_times_widget.update(total_times)
+        self.total_times_widget.update(self.times_by_tag)
         self.root.append(self.total_times_widget)
 
         self.window.set_child(self.root)
@@ -84,8 +90,10 @@ class App(Gtk.Application):
     def on_timer_finished(self, _):
         """Notifies the user when the timer ends, and also cleans up the ui."""
         description, tag, duration_minutes = self.form_data
-        total_times[tag] += duration_minutes
-        self.total_times_widget.update(total_times)
+        db.add_time_slice(description, tag, duration_minutes)
+
+        self.update_times_by_tag()
+        self.total_times_widget.update(self.times_by_tag)
 
         # Notify the user
         notification = Notify.Notification(

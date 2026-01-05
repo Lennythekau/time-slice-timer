@@ -9,7 +9,7 @@ __DB_NAME = "time_slice.db"
 __TIME_SLICE_TABLE = "time_slice"
 
 
-def adapt_date_iso(val):
+def __adapt_date_iso(val):
     """Adapt datetime.date to ISO 8601 date."""
     return val.isoformat()
 
@@ -19,20 +19,20 @@ def __adapt_datetime_iso(val: datetime):
     return val.replace(tzinfo=None).isoformat()
 
 
+def __convert_date(val):
+    """Convert ISO 8601 date to datetime.date object."""
+    return date.fromisoformat(val.decode())
+
+
 def __convert_datetime(val: bytes):
     """Convert ISO 8601 datetime to datetime.datetime object."""
     return datetime.fromisoformat(val.decode())
 
 
-def convert_date(val):
-    """Convert ISO 8601 date to datetime.date object."""
-    return date.fromisoformat(val.decode())
-
-
-sql.register_adapter(date, adapt_date_iso)
+sql.register_adapter(date, __adapt_date_iso)
 sql.register_adapter(datetime, __adapt_datetime_iso)
+sql.register_converter("date", __convert_date)
 sql.register_converter("datetime", __convert_datetime)
-sql.register_converter("date", convert_date)
 
 
 def __create_connection():
@@ -60,8 +60,10 @@ def add_time_slice(description: str, tag: str, duration_minutes: int):
         )
 
 
-def get_time_slices_by_date(date: date) -> list[TimeSlice]:
+def get_time_slices(date: date | None = None) -> list[TimeSlice]:
     with __create_connection() as connection:
+        date = date or datetime.now().date()
+
         # prevent silly mistakes, ensuring we only have the date part of what could be a datetime object (since datetime inherits from date)
         if isinstance(date, datetime):
             date = date.date()
@@ -74,8 +76,17 @@ def get_time_slices_by_date(date: date) -> list[TimeSlice]:
         )
 
 
-def get_todays_time_slices():
-    return get_time_slices_by_date(datetime.now().date())
+def get_times_by_tag(date: date | None = None) -> list[tuple[str, int]]:
+    with __create_connection() as connection:
+        date = date or datetime.now().date()
+
+        if isinstance(date, datetime):
+            date = date.date()
+
+        return connection.execute(
+            f"SELECT tag, SUM(duration) FROM {__TIME_SLICE_TABLE} WHERE DATE(created_at)=? GROUP BY tag",
+            (date,),
+        ).fetchall()
 
 
 def get_all_time_slices():
