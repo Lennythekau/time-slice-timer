@@ -1,5 +1,5 @@
 from datetime import date, datetime
-import os
+import pathlib
 import sqlite3 as sql
 
 from time_slice import TimeSlice
@@ -7,6 +7,7 @@ from time_slice import TimeSlice
 __DATA_DIRECTORY = "data"
 __DB_NAME = "time_slice.db"
 __TIME_SLICE_TABLE = "time_slice"
+__CURRENT_DIRECTORY = pathlib.Path(__file__).resolve().parent
 
 
 def __adapt_date_iso(val):
@@ -36,7 +37,7 @@ sql.register_converter("datetime", __convert_datetime)
 
 
 def __create_connection():
-    path = os.path.join(__DATA_DIRECTORY, __DB_NAME)
+    path = __CURRENT_DIRECTORY / __DATA_DIRECTORY / __DB_NAME
     return sql.connect(path, detect_types=sql.PARSE_DECLTYPES)
 
 

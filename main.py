@@ -6,12 +6,14 @@ from gi.repository import Gtk, Notify
 
 from time_slice_form_data import TimeSliceFormData
 from timer import Timer
-import db
 from total_times_widget import TotalTimesWidget
+
+import db
+from settings import get_settings_or_get_defaults, get_tag_names, get_tag_name_list
 
 Notify.init("Slice")
 
-TAGS = "Blender", "Musescore", "Quant"
+settings = get_settings_or_get_defaults()
 APP_NAME = "Slice ⏰🍕"
 
 
@@ -22,7 +24,7 @@ class App(Gtk.Application):
         self.update_times_by_tag()
 
     def update_times_by_tag(self):
-        self.times_by_tag = {tag: 0 for tag in TAGS}
+        self.times_by_tag = {tag: 0 for tag in get_tag_names(settings)}
         for tag, minutes in db.get_times_by_tag():
             self.times_by_tag[tag] += minutes
 
@@ -42,6 +44,8 @@ class App(Gtk.Application):
         self.total_times_widget.update(self.times_by_tag)
         self.root.append(self.total_times_widget)
 
+        self.on_tag_input_changed()  # call this so that the default duration is set for the first item selected.
+
         self.window.set_child(self.root)
         self.window.present()
 
@@ -52,10 +56,13 @@ class App(Gtk.Application):
         self.description_input = Gtk.Entry(placeholder_text="Enter description...")
         self.time_slice_form.append(self.description_input)
 
-        self.tag_input = Gtk.DropDown.new_from_strings(TAGS)
+        self.tag_input = Gtk.DropDown.new_from_strings(get_tag_name_list(settings))
+        self.tag_input.connect("notify::selected", self.on_tag_input_changed)
         self.time_slice_form.append(self.tag_input)
 
-        self.duration_input = Gtk.SpinButton.new_with_range(1, 60, 1)
+        self.duration_input = Gtk.SpinButton.new_with_range(
+            1, 60, settings["default_duration"]
+        )
         self.time_slice_form.append(self.duration_input)
 
         self.time_slice_submit_button = Gtk.Button(label="Start")
@@ -64,12 +71,17 @@ class App(Gtk.Application):
 
         self.root.append(self.time_slice_form)
 
+    def on_tag_input_changed(self, *_):
+        index = self.tag_input.get_selected()
+        duration = settings["tags"][index].get("duration", settings["default_duration"])
+        self.duration_input.set_value(duration)
+
     def create_time_slice(self, _):
         """Creates the time slice, and sets up the timer."""
         # Grab all the info
         self.form_data = TimeSliceFormData(
             description=self.description_input.get_text(),
-            tag=TAGS[self.tag_input.get_selected()],
+            tag=get_tag_name_list(settings)[self.tag_input.get_selected()],
             duration_minutes=self.duration_input.get_value_as_int(),
         )
 
