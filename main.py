@@ -1,8 +1,11 @@
+import pathlib
+from typing import cast
 import gi
 
 gi.require_version("Gtk", "4.0")
+gi.require_version("Gdk", "4.0")
 gi.require_version("Notify", "0.7")
-from gi.repository import Gtk, Notify
+from gi.repository import Gdk, Gtk, Notify
 
 from time_slice_form_data import TimeSliceFormData
 from timer import Timer
@@ -12,6 +15,16 @@ import db
 from settings import get_settings_or_get_defaults, get_tag_names, get_tag_name_list
 
 Notify.init("Slice")
+
+CURRENT_DIRECTORY = pathlib.Path(__file__).resolve().parent
+provider = Gtk.CssProvider()
+provider.load_from_path(str(CURRENT_DIRECTORY / "style.css"))
+
+Gtk.StyleContext.add_provider_for_display(
+    cast(Gdk.Display, Gdk.Display.get_default()),
+    provider,
+    Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION,
+)
 
 settings = get_settings_or_get_defaults()
 APP_NAME = "Slice ⏰🍕"
@@ -31,9 +44,9 @@ class App(Gtk.Application):
     def do_activate(self) -> None:
         self.window = Gtk.ApplicationWindow(application=self)
         self.window.set_title(APP_NAME)
-        self.window.set_default_size(500, 400)
+        self.window.set_default_size(-1, -1)
 
-        self.root = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        self.root = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=5)
         self.create_time_slice_form()
 
         self.timer = Timer()
@@ -51,7 +64,7 @@ class App(Gtk.Application):
 
     def create_time_slice_form(self) -> None:
         """Adds the widgets to create the time slice form."""
-        self.time_slice_form = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
+        self.time_slice_form = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2)
 
         self.description_input = Gtk.Entry(placeholder_text="Enter description...")
         self.time_slice_form.append(self.description_input)

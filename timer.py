@@ -15,6 +15,7 @@ class Timer(Gtk.Box):
     def __init__(self):
         super().__init__(orientation=Gtk.Orientation.VERTICAL)
         self.__time_display = Gtk.Label(label="unset")
+        self.__time_display.add_css_class("time-display")
         self.append(self.__time_display)
         self.__create_controls()
 
@@ -22,14 +23,18 @@ class Timer(Gtk.Box):
         self.__controls_box = Gtk.Box(
             orientation=Gtk.Orientation.HORIZONTAL, halign=Gtk.Align.CENTER
         )
+        self.add_css_class("controls-box")
 
         self.__play_button = Gtk.Button(label="")
+        self.__play_button.add_css_class("flat")
         self.__controls_box.append(self.__play_button)
 
         self.__pause_button = Gtk.Button(label="")
+        self.__pause_button.add_css_class("flat")
         self.__controls_box.append(self.__pause_button)
 
         self.__cancel_button = Gtk.Button(label="󰜺")
+        self.__cancel_button.add_css_class("flat")
         self.__controls_box.append(self.__cancel_button)
 
         self.append(self.__controls_box)

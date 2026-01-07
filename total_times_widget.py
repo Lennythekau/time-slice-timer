@@ -6,6 +6,7 @@ class TotalTimesWidget(Gtk.Box):
         super().__init__(orientation=Gtk.Orientation.VERTICAL, spacing=6)
 
         self.__liststore = Gtk.ListStore(str, int)
+        # TODO: convert this into a ColumnView
         self.__view = Gtk.TreeView(model=self.__liststore)
 
         renderer_text = Gtk.CellRendererText()
