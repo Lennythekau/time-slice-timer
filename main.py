@@ -73,9 +73,7 @@ class App(Gtk.Application):
         self.tag_input.connect("notify::selected", self.on_tag_input_changed)
         self.time_slice_form.append(self.tag_input)
 
-        self.duration_input = Gtk.SpinButton.new_with_range(
-            1, 60, settings["default_duration"]
-        )
+        self.duration_input = Gtk.SpinButton.new_with_range(1, 60, 5)
         self.time_slice_form.append(self.duration_input)
 
         self.time_slice_submit_button = Gtk.Button(label="Start")
