@@ -1,5 +1,4 @@
 from gi.repository import GLib, Gtk, GObject
-from time_slice_form_data import TimeSliceFormData
 
 
 def format_time(seconds: int):
@@ -39,11 +38,11 @@ class Timer(Gtk.Box):
 
         self.append(self.__controls_box)
 
-    def begin(self, form_data: TimeSliceFormData):
+    def begin(self, duration_minutes: int):
         self.set_sensitive(True)
         self.__play_button.set_sensitive(False)
 
-        self.__seconds_left = form_data.duration_minutes * 60
+        self.__seconds_left = duration_minutes * 60
         self.__time_display.set_text(format_time(self.__seconds_left))
 
         self.__play_button_clicked_id = self.__play_button.connect(

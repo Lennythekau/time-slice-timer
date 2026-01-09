@@ -12,7 +12,7 @@ class _TagTime(GObject.GObject):
         self.minutes = minutes
 
 
-class TotalTimesWidget(Gtk.Box):
+class TotalTimesTable(Gtk.Box):
     def __init__(self):
         super().__init__(orientation=Gtk.Orientation.VERTICAL)
 

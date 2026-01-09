@@ -2,6 +2,8 @@ import pathlib
 from typing import cast
 import gi
 
+from next_action_dialog import NextActionDialog
+
 gi.require_version("Gtk", "4.0")
 gi.require_version("Gdk", "4.0")
 gi.require_version("Notify", "0.7")
@@ -9,7 +11,7 @@ from gi.repository import Gdk, Gtk, Notify
 
 from time_slice_form_data import TimeSliceFormData
 from timer import Timer
-from total_times_widget import TotalTimesWidget
+from total_times_table import TotalTimesTable
 
 import db
 from settings import get_settings_or_get_defaults, get_tag_names, get_tag_name_list
@@ -53,11 +55,14 @@ class App(Gtk.Application):
         self.timer.set_sensitive(False)
         self.root.append(self.timer)
 
-        self.total_times_widget = TotalTimesWidget()
-        self.total_times_widget.update(self.times_by_tag)
-        self.root.append(self.total_times_widget)
+        self.total_times_table = TotalTimesTable()
+        self.total_times_table.update(self.times_by_tag)
+        self.root.append(self.total_times_table)
 
         self.on_tag_input_changed()  # call this so that the default duration is set for the first item selected.
+
+        self.next_action_dialog = NextActionDialog(self.window)
+        self.next_action_dialog.connect("work", self.on_chose_work)
 
         self.window.set_child(self.root)
         self.window.present()
@@ -97,7 +102,7 @@ class App(Gtk.Application):
         )
 
         self.time_slice_form.set_sensitive(False)
-        self.timer.begin(self.form_data)
+        self.timer.begin(self.form_data.duration_minutes)
 
         self.on_timer_cancelled_id = self.timer.connect(
             "cancelled", self.on_timer_cancelled
@@ -116,7 +121,7 @@ class App(Gtk.Application):
         db.add_time_slice(description, tag, duration_minutes)
 
         self.update_times_by_tag()
-        self.total_times_widget.update(self.times_by_tag)
+        self.total_times_table.update(self.times_by_tag)
 
         # Notify the user
         notification = Notify.Notification(
@@ -126,8 +131,13 @@ class App(Gtk.Application):
         )
         notification.show()
 
-        self.time_slice_form.set_sensitive(True)
         self.remove_timer_signal_listeners()
+        self.timer.set_sensitive(False)
+        self.next_action_dialog.present()
+
+    def on_chose_work(self, *_):
+        self.time_slice_form.set_sensitive(True)
+        self.description_input.grab_focus()
 
     def remove_timer_signal_listeners(self):
         self.timer.disconnect(self.on_timer_cancelled_id)
