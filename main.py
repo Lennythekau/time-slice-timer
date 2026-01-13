@@ -5,9 +5,10 @@ import gi
 from next_action_dialog import NextActionDialog
 
 gi.require_version("Gtk", "4.0")
+gi.require_version("Gio", "2.0")
 gi.require_version("Gdk", "4.0")
 gi.require_version("Notify", "0.7")
-from gi.repository import Gdk, Gtk, Notify
+from gi.repository import GLib, Gdk, Gio, Gtk, Notify
 
 from time_slice_form_data import TimeSliceFormData
 from timer import Timer
@@ -46,7 +47,6 @@ class App(Gtk.Application):
     def do_activate(self) -> None:
         self.window = Gtk.ApplicationWindow(application=self)
         self.window.set_title(APP_NAME)
-        self.window.set_default_size(-1, -1)
 
         self.root = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=5)
         self.create_time_slice_form()
@@ -64,8 +64,21 @@ class App(Gtk.Application):
         self.next_action_dialog = NextActionDialog(self.window)
         self.next_action_dialog.connect("work", self.on_chose_work)
 
+        action = Gio.SimpleAction.new("toggle_stats", None)
+        action.connect("activate", self.toggle_stats)
+        self.window.add_action(action)
+        self.set_accels_for_action("win.toggle_stats", ["<Ctrl>H"])
+
         self.window.set_child(self.root)
         self.window.present()
+
+    def toggle_stats(self, *_):
+        # forces the window to use as little space as possible, so the freed space from the total times widget
+        # is no longer taken up on the screen by the app (that is, that part of the screen does not have pixels allocated to this app)
+        self.window.set_resizable(False)
+        self.total_times_table.set_visible(not self.total_times_table.get_visible())
+        # Make it resizable by next tick.
+        GLib.timeout_add_seconds(0, lambda: self.window.set_resizable(True) and False)
 
     def create_time_slice_form(self) -> None:
         """Adds the widgets to create the time slice form."""
@@ -79,6 +92,7 @@ class App(Gtk.Application):
         self.time_slice_form.append(self.tag_input)
 
         self.duration_input = Gtk.SpinButton.new_with_range(1, 60, 5)
+
         self.time_slice_form.append(self.duration_input)
 
         self.time_slice_submit_button = Gtk.Button(label="Start")
