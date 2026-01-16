@@ -1,5 +1,5 @@
 import pathlib
-from typing import cast
+from typing import Any, Callable, cast
 import gi
 
 from next_action_dialog import NextActionDialog
@@ -44,6 +44,12 @@ class App(Gtk.Application):
         for tag, minutes in db.get_times_by_tag():
             self.times_by_tag[tag] += minutes
 
+    def setup_action(self, callback: Callable[[], Any], shortcut: str):
+        action = Gio.SimpleAction.new(callback.__name__, None)
+        action.connect("activate", callback)
+        self.window.add_action(action)
+        self.set_accels_for_action(f"win.{callback.__name__}", [shortcut])
+
     def do_activate(self) -> None:
         self.window = Gtk.ApplicationWindow(application=self)
         self.window.set_title(APP_NAME)
@@ -64,10 +70,11 @@ class App(Gtk.Application):
         self.next_action_dialog = NextActionDialog(self.window)
         self.next_action_dialog.connect("work", self.on_chose_work)
 
-        action = Gio.SimpleAction.new("toggle_stats", None)
-        action.connect("activate", self.toggle_stats)
-        self.window.add_action(action)
-        self.set_accels_for_action("win.toggle_stats", ["<Ctrl>H"])
+        self.setup_action(self.toggle_stats, "<Alt>S")
+        self.setup_action(self.focus_description_input, "<Alt>1")
+        self.setup_action(self.focus_tag_input, "<Alt>2")
+        self.setup_action(self.focus_duration_input, "<Alt>3")
+        self.setup_action(self.create_time_slice, "<Alt>Return")
 
         self.window.set_child(self.root)
         self.window.present()
@@ -77,8 +84,20 @@ class App(Gtk.Application):
         # is no longer taken up on the screen by the app (that is, that part of the screen does not have pixels allocated to this app)
         self.window.set_resizable(False)
         self.total_times_table.set_visible(not self.total_times_table.get_visible())
-        # Make it resizable by next tick.
-        GLib.timeout_add_seconds(0, lambda: self.window.set_resizable(True) and False)
+        # Make it resizable by a second later
+        GLib.timeout_add_seconds(1, lambda: self.window.set_resizable(True) and False)
+
+    def focus_description_input(self, *_):
+        if self.time_slice_form.get_sensitive():
+            self.description_input.grab_focus()
+
+    def focus_tag_input(self, *_):
+        if self.time_slice_form.get_sensitive():
+            self.tag_input.grab_focus()
+
+    def focus_duration_input(self, *_):
+        if self.time_slice_form.get_sensitive():
+            self.duration_input.grab_focus()
 
     def create_time_slice_form(self) -> None:
         """Adds the widgets to create the time slice form."""
@@ -87,7 +106,12 @@ class App(Gtk.Application):
         self.description_input = Gtk.Entry(placeholder_text="Enter description...")
         self.time_slice_form.append(self.description_input)
 
-        self.tag_input = Gtk.DropDown.new_from_strings(get_tag_name_list(settings))
+        self.tag_input = Gtk.DropDown(
+            model=Gtk.StringList(strings=get_tag_name_list(settings)),
+            enable_search=True,
+            expression=Gtk.PropertyExpression.new(Gtk.StringObject, None, "string"),
+        )
+
         self.tag_input.connect("notify::selected", self.on_tag_input_changed)
         self.time_slice_form.append(self.tag_input)
 
@@ -106,7 +130,7 @@ class App(Gtk.Application):
         duration = settings["tags"][index].get("duration", settings["default_duration"])
         self.duration_input.set_value(duration)
 
-    def create_time_slice(self, _):
+    def create_time_slice(self, *_):
         """Creates the time slice, and sets up the timer."""
         # Grab all the info
         self.form_data = TimeSliceFormData(
