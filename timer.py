@@ -40,7 +40,10 @@ class Timer(Gtk.Box):
 
     def begin(self, duration_minutes: int):
         self.set_sensitive(True)
+
         self.__play_button.set_sensitive(False)
+        self.__pause_button.set_sensitive(True)
+        self.__cancel_button.set_sensitive(True)
 
         self.__seconds_left = duration_minutes * 60
         self.__time_display.set_text(format_time(self.__seconds_left))

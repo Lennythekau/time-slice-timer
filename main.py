@@ -64,6 +64,7 @@ class App(Gtk.Application):
         self.total_times_table = TotalTimesTable()
         self.total_times_table.update(self.times_by_tag)
         self.root.append(self.total_times_table)
+        self.total_times_table.set_visible(False)
 
         self.on_tag_input_changed()  # call this so that the default duration is set for the first item selected.
 
@@ -131,7 +132,18 @@ class App(Gtk.Application):
         self.duration_input.set_value(duration)
 
     def create_time_slice(self, *_):
+        # TODO: replace UI state checking with some kind of model.
+        # If this is run while the timer is running, then ignore this request.
+        if not self.time_slice_form.get_sensitive():
+            return
+
         """Creates the time slice, and sets up the timer."""
+        # this might be fired by the global accelerator <Alt>Return
+        # in which case, a focus out event may not happen for the duration input
+        # and so the value just typed in may not be commited.
+        # Call update to ensure they are commited.
+        self.duration_input.update()
+
         # Grab all the info
         self.form_data = TimeSliceFormData(
             description=self.description_input.get_text(),
@@ -154,7 +166,7 @@ class App(Gtk.Application):
         self.remove_timer_signal_listeners()
 
     def on_timer_finished(self, _):
-        """Notifies the user when the timer ends, and also cleans up the ui."""
+        """Notifies the user when the timer ends, and also cleans up the UI."""
         description, tag, duration_minutes = self.form_data
         db.add_time_slice(description, tag, duration_minutes)
 
@@ -182,5 +194,10 @@ class App(Gtk.Application):
         self.timer.disconnect(self.on_timer_finished_id)
 
 
-app = App()
-app.run([])
+def main():
+    app = App()
+    app.run([])
+
+
+if __name__ == "__main__":
+    main()
