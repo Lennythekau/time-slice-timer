@@ -128,7 +128,9 @@ class App(Gtk.Application):
 
     def on_tag_input_changed(self, *_):
         index = self.tag_input.get_selected()
-        duration = settings["tags"][index].get("duration", settings["default_duration"])
+
+        tag_settings = settings["tags"][index]
+        duration = tag_settings.get("duration", settings["default_duration"])
         self.duration_input.set_value(duration)
 
     def create_time_slice(self, *_):

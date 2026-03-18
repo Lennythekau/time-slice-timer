@@ -48,6 +48,7 @@ class NextActionDialog(Gtk.Dialog):
         self.__stack.set_visible_child(self.__options_box)
 
         self.set_child(__root)
+        self.connect("close-request", lambda _: True)
 
     def __on_break_button_clicked(self, _):
         self.__stack.set_visible_child(self.__timer)
