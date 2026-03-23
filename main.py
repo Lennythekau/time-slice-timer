@@ -1,7 +1,6 @@
 import pathlib
 from typing import Any, Callable, cast
 import gi
-
 from next_action_dialog import NextActionDialog
 
 gi.require_version("Gtk", "4.0")
@@ -19,18 +18,20 @@ from settings import get_settings_or_get_defaults, get_tag_names, get_tag_name_l
 
 Notify.init("Slice")
 
-CURRENT_DIRECTORY = pathlib.Path(__file__).resolve().parent
-provider = Gtk.CssProvider()
-provider.load_from_path(str(CURRENT_DIRECTORY / "style.css"))
-
-Gtk.StyleContext.add_provider_for_display(
-    cast(Gdk.Display, Gdk.Display.get_default()),
-    provider,
-    Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION,
-)
-
 settings = get_settings_or_get_defaults()
 APP_NAME = "Slice ⏰🍕"
+CURRENT_DIRECTORY = pathlib.Path(__file__).resolve().parent
+
+
+def load_css():
+    provider = Gtk.CssProvider()
+    provider.load_from_path(str(CURRENT_DIRECTORY / "style.css"))
+
+    Gtk.StyleContext.add_provider_for_display(
+        cast(Gdk.Display, Gdk.Display.get_default()),
+        provider,
+        Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION,
+    )
 
 
 class App(Gtk.Application):
@@ -197,6 +198,7 @@ class App(Gtk.Application):
 
 
 def main():
+    load_css()
     app = App()
     app.run([])
 
