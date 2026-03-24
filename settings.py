@@ -8,14 +8,15 @@ from typing import TypedDict, cast
 import pathlib
 
 
-class TagSettings(TypedDict):
+class TagConfig(TypedDict):
     name: str
     duration: int
 
 
 class Settings(TypedDict):
     default_duration: int
-    tags: list[TagSettings]
+    tags: list[TagConfig]
+    tag_names: list[str]
 
 
 __DEFAULT_SETTINGS_FILE_CONTENTS = """
@@ -41,25 +42,17 @@ name = "Godot"
 name = "Musescore"
 """
 
-__CURRENT_DIRECTORY = pathlib.Path(__file__).resolve().parent
 
-
-def get_settings_or_get_defaults() -> Settings:
-
-    path = __CURRENT_DIRECTORY / "data" / "settings.toml"
+def get_settings_or_defaults(path: pathlib.Path) -> Settings:
     try:
         with open(path, "r") as f:
             contents = f.read()
-            return cast(Settings, tomllib.loads(contents))
-    except FileNotFoundError as err:
+    except FileNotFoundError:
         with open(path, "w") as f:
-            f.write(__DEFAULT_SETTINGS_FILE_CONTENTS)
-        return cast(Settings, tomllib.loads(__DEFAULT_SETTINGS_FILE_CONTENTS))
+            contents = __DEFAULT_SETTINGS_FILE_CONTENTS
+            f.write(contents)
 
+    raw_settings = cast(Settings, tomllib.loads(contents))
+    raw_settings["tag_names"] = list(config["name"] for config in raw_settings["tags"])
 
-def get_tag_names(settings: Settings):
-    return (tag["name"] for tag in settings["tags"])
-
-
-def get_tag_name_list(settings: Settings):
-    return list(get_tag_names(settings))
+    return raw_settings

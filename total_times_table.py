@@ -2,21 +2,20 @@ from typing import cast
 from gi.repository import Gtk, Gio, GObject
 
 
-class _TagTime(GObject.GObject):
-    tag_name = GObject.Property(type=str)
-    minutes = GObject.Property(type=int)
-
-    def __init__(self, tag_name: str, minutes: int):
-        super().__init__()
-        self.tag_name = tag_name
-        self.minutes = minutes
-
-
 class TotalTimesTable(Gtk.Box):
+    class TagTime(GObject.GObject):
+        tag_name = GObject.Property(type=str)
+        minutes = GObject.Property(type=int)
+
+        def __init__(self, tag_name: str, minutes: int):
+            super().__init__()
+            self.tag_name = tag_name
+            self.minutes = minutes
+
     def __init__(self):
         super().__init__(orientation=Gtk.Orientation.VERTICAL)
 
-        self.__store = Gio.ListStore(item_type=_TagTime)
+        self.__store = Gio.ListStore(item_type=TotalTimesTable.TagTime)
         self.__selection = Gtk.NoSelection(model=self.__store)
         self.__view = Gtk.ColumnView(model=self.__selection)
 
@@ -45,7 +44,7 @@ class TotalTimesTable(Gtk.Box):
         list_item.set_child(label)
 
     def __bind_tag(self, _, list_item: Gtk.ColumnViewCell):
-        item = cast(_TagTime, list_item.get_item())
+        item = cast(TotalTimesTable.TagTime, list_item.get_item())
         cast(Gtk.Label, list_item.get_child()).set_text(item.tag_name)
 
     def __setup_minutes(self, _, list_item: Gtk.ColumnViewCell):
@@ -53,10 +52,10 @@ class TotalTimesTable(Gtk.Box):
         list_item.set_child(label)
 
     def __bind_minutes(self, _, list_item: Gtk.ColumnViewCell):
-        item = cast(_TagTime, list_item.get_item())
+        item = cast(TotalTimesTable.TagTime, list_item.get_item())
         cast(Gtk.Label, list_item.get_child()).set_text(str(item.minutes))
 
     def update(self, tag_totals: dict[str, int]):
         self.__store.remove_all()
         for tag_name, minutes in tag_totals.items():
-            self.__store.append(_TagTime(tag_name, minutes))
+            self.__store.append(TotalTimesTable.TagTime(tag_name, minutes))
