@@ -41,6 +41,7 @@ class App(Gtk.Application):
             app_info.APP_ROOT / "data" / "time_slice.db"
         )
         time_slice_repo = TimeSliceRepository(make_connection)
+        time_slice_repo.ensure_table_created()
 
         settings = get_settings_or_defaults(
             app_info.APP_ROOT / "data" / "settings.toml"
