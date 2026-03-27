@@ -1,4 +1,5 @@
 from PySide6.QtCore import Slot
+from PySide6 import QtCore, QtGui
 from stopwatch_controller import StopwatchController
 from PySide6 import QtWidgets
 
@@ -27,6 +28,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.__layout.addWidget(self.__new_slice_form)
         self.__layout.addWidget(self.__stopwatch)
+
+        self.layout().setSizeConstraint(QtWidgets.QLayout.SizeConstraint.SetMinimumSize)  # type: ignore
 
     def __on_new_slice_form_submitted(self, data: NewSliceForm.Data):
         self.__stopwatch.setEnabled(True)

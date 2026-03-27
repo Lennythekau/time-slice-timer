@@ -1,7 +1,0 @@
-<RCC>
-    <qresource prefix="/">
-        <file>assets/play.svg</file>
-        <file>assets/pause.svg</file>
-        <file>assets/end.svg</file>
-    </qresource>
-</RCC>
