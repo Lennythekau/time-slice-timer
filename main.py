@@ -1,65 +1,28 @@
-# Std lib
-from typing import Any, Callable
+from timer_model import TimerModel
+from stopwatch_controller import StopwatchController
+import random
+import sys
 
-# Gtk
-import gi
+from PySide6 import QtCore, QtGui, QtWidgets, __version__
 
 import app_info
-
-gi.require_version("Gtk", "4.0")
-gi.require_version("Gio", "2.0")
-gi.require_version("Gdk", "4.0")
-gi.require_version("Notify", "0.7")
-
-from gi.repository import Gio, Notify, Gtk
-
-# Models
-from db import sqlite_setup
-from db.time_slice_repository import TimeSliceRepository
+from main_window import MainWindow
 from settings import get_settings_or_defaults
 
-# Main window
-from main_window import MainWindow
 
+def main() -> None:
+    app = QtWidgets.QApplication([])
+    app.setDesktopFileName(app_info.APP_ID)
 
-# TODO: rework this so that it uses MVC. Or just MV.
+    settings = get_settings_or_defaults(app_info.APP_ROOT / "data" / "settings.toml")
 
+    timer_model = TimerModel()
+    stopwatch_controller = StopwatchController(timer_model)
 
-class App(Gtk.Application):
-    def __init__(self):
-        super().__init__(application_id=app_info.APP_ID)
-        Notify.init(app_info.APP_NAME)
+    window = MainWindow(settings, stopwatch_controller)
+    window.show()
 
-    def setup_action(self, callback: Callable[[], Any], shortcut: str):
-        action = Gio.SimpleAction.new(callback.__name__, None)
-        action.connect("activate", callback)
-        self.window.add_action(action)
-        self.set_accels_for_action(f"win.{callback.__name__}", [shortcut])
-
-    def do_activate(self) -> None:
-        make_connection = sqlite_setup.create_connection_factory(
-            app_info.APP_ROOT / "data" / "time_slice.db"
-        )
-        time_slice_repo = TimeSliceRepository(make_connection)
-        time_slice_repo.ensure_table_created()
-
-        settings = get_settings_or_defaults(
-            app_info.APP_ROOT / "data" / "settings.toml"
-        )
-        self.window = MainWindow(self, time_slice_repo, settings)
-
-        self.setup_action(self.window.focus_description_input, "<Alt>1")
-        self.setup_action(self.window.focus_tag_input, "<Alt>2")
-        self.setup_action(self.window.focus_duration_input, "<Alt>3")
-        self.setup_action(self.window.submit_form, "<Alt>Return")
-        self.setup_action(self.window.toggle_stats, "<Alt>s")
-
-        self.window.present()
-
-
-def main():
-    app = App()
-    app.run([])
+    sys.exit(app.exec())
 
 
 if __name__ == "__main__":
