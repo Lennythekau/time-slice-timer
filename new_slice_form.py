@@ -1,5 +1,6 @@
+from typing import NamedTuple
+
 from PySide6 import QtGui
-from typing import NamedTuple, cast
 from PySide6 import QtWidgets
 from PySide6.QtCore import Signal, Slot
 

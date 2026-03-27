@@ -88,10 +88,20 @@ class Stopwatch(QtWidgets.QWidget):
         self.__controller.cancel()
         self.__timer.stop()
 
+    def __on_timer_finished(self):
+        if self.__timer.isActive():
+            self.finished.emit()
+            self.__timer.stop()
+
     @QtCore.Slot()
     def __on_timer_timeout(self):
         seconds_left = round(self.__controller.get_remaining_time())
-        self.__time_text.setText(self.__format_time(seconds_left))
+
+        # Still have time left before we're done
+        if seconds_left > 0:
+            self.__time_text.setText(self.__format_time(seconds_left))
+        else:
+            self.__on_timer_finished()
 
     def __format_time(self, seconds: int):
         return f"{seconds//60:02}:{seconds%60:02}"

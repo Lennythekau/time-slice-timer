@@ -1,3 +1,4 @@
+from db.time_slice_repository import TimeSliceRepository
 from PySide6.QtCore import Slot
 from PySide6 import QtCore, QtGui
 from stopwatch_controller import StopwatchController
@@ -10,8 +11,15 @@ from stopwatch import Stopwatch
 
 
 class MainWindow(QtWidgets.QMainWindow):
-    def __init__(self, settings: Settings, stopwatch_controller: StopwatchController):
+    def __init__(
+        self,
+        settings: Settings,
+        stopwatch_controller: StopwatchController,
+        time_slice_repo: TimeSliceRepository,
+    ):
         super().__init__()
+
+        self.repo = time_slice_repo
 
         self.setWindowTitle(app_info.APP_NAME)
 
@@ -23,8 +31,10 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.__stopwatch = Stopwatch(stopwatch_controller)
         self.__stopwatch.setEnabled(False)
+
         self.__stopwatch.started.connect(self.__on_stopwatch_started)
         self.__stopwatch.cancelled.connect(self.__on_stopwatch_cancelled)
+        self.__stopwatch.finished.connect(self.__on_stopwatch_finished)
 
         self.__layout.addWidget(self.__new_slice_form)
         self.__layout.addWidget(self.__stopwatch)
@@ -33,6 +43,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def __on_new_slice_form_submitted(self, data: NewSliceForm.Data):
         self.__stopwatch.setEnabled(True)
+        self.form_data = data
         self.__stopwatch.start(data.duration)
 
     @Slot()
@@ -43,3 +54,9 @@ class MainWindow(QtWidgets.QMainWindow):
     def __on_stopwatch_cancelled(self):
         self.__new_slice_form.setEnabled(True)
         self.__stopwatch.setEnabled(False)
+
+    @Slot()
+    def __on_stopwatch_finished(self):
+        self.__new_slice_form.setEnabled(True)
+        self.__stopwatch.setEnabled(False)
+        self.repo.add(*self.form_data)

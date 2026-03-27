@@ -1,6 +1,7 @@
+from db.sqlite_setup import create_connection_factory
+from db.time_slice_repository import TimeSliceRepository
 from timer_model import TimerModel
 from stopwatch_controller import StopwatchController
-import random
 import sys
 
 from PySide6 import QtCore, QtGui, QtWidgets, __version__
@@ -19,7 +20,12 @@ def main() -> None:
     timer_model = TimerModel()
     stopwatch_controller = StopwatchController(timer_model)
 
-    window = MainWindow(settings, stopwatch_controller)
+    sqlite_connection = create_connection_factory(
+        app_info.APP_ROOT / "data" / "time_slice.db"
+    )
+    time_slice_repo = TimeSliceRepository(sqlite_connection)
+
+    window = MainWindow(settings, stopwatch_controller, time_slice_repo)
     window.show()
 
     sys.exit(app.exec())
