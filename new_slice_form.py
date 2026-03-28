@@ -19,6 +19,11 @@ class NewSliceForm(QtWidgets.QWidget):
 
         super().__init__()
         self.__layout = QtWidgets.QVBoxLayout(self)
+        self.__layout.setSpacing(0)
+
+        self.setSizePolicy(
+            QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Minimum
+        )
 
         self.__description_input = QtWidgets.QLineEdit(
             placeholderText="Task description"

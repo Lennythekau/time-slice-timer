@@ -24,6 +24,7 @@ class Stopwatch(QtWidgets.QWidget):
 
         self.__controls_box = QtWidgets.QGroupBox()
         self.__controls_box_layout = QtWidgets.QHBoxLayout(self.__controls_box)
+        # self.__controls_box_layout.setContentsMargins(0, 0, 0, 0)
 
         self.__play_button = self.__control_button("play", self.__resume)
         self.__pause_button = self.__control_button("pause", self.__pause)
