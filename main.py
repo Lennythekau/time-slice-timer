@@ -4,7 +4,7 @@ from timer_model import TimerModel
 from stopwatch_controller import StopwatchController
 import sys
 
-from PySide6 import QtCore, QtGui, QtWidgets, __version__
+from PySide6 import QtWidgets
 
 import app_info
 from main_window import MainWindow

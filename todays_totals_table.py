@@ -7,7 +7,7 @@ class TodaysTotalsTable(QtWidgets.QTableWidget):
         super().__init__()
 
         self.horizontalHeader().setVisible(True)
-        self.setShowGrid(True)
+        self.setFocusPolicy(Qt.FocusPolicy.NoFocus)
 
         # tag name, total
         self.setColumnCount(2)

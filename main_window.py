@@ -1,4 +1,4 @@
-from PySide6 import QtCore, QtGui
+from PySide6 import QtGui
 from PySide6 import QtWidgets
 from PySide6.QtCore import Slot
 
@@ -8,8 +8,8 @@ from new_slice_form import NewSliceForm
 from settings import Settings
 from stopwatch import Stopwatch
 from stopwatch_controller import StopwatchController
+from times_up_dialog import TimesUpDialog
 from todays_totals_table import TodaysTotalsTable
-import todays_totals_table
 
 
 class MainWindow(QtWidgets.QMainWindow):
@@ -63,7 +63,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.__todays_totals_table.setVisible(
             not self.__todays_totals_table.isVisible()
         )
-        self.adjustSize()
 
     def __get_todays_totals(self):
         totals = {tag: 0 for tag in self.settings["tag_names"]}
@@ -93,3 +92,5 @@ class MainWindow(QtWidgets.QMainWindow):
         self.__stopwatch.setEnabled(False)
         self.repo.add(*self.form_data)
         self.__todays_totals_table.update_times(self.__get_todays_totals())
+
+        TimesUpDialog(self).open()
