@@ -24,6 +24,7 @@ def main() -> None:
         app_info.APP_ROOT / "data" / "time_slice.db"
     )
     time_slice_repo = TimeSliceRepository(sqlite_connection)
+    time_slice_repo.ensure_table_created()
 
     window = MainWindow(settings, stopwatch_controller, time_slice_repo)
     window.show()
