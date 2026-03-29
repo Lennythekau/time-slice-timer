@@ -11,20 +11,30 @@ from main_window import MainWindow
 from settings import get_settings_or_defaults
 
 
+def make_time_slice_repo():
+    make_connection = create_connection_factory(
+        app_info.APP_ROOT / "data" / "time_slice.db"
+    )
+    time_slice_repo = TimeSliceRepository(make_connection)
+    time_slice_repo.ensure_table_created()
+
+    return time_slice_repo
+
+
+def make_stopwatch_controller():
+    timer_model = TimerModel()
+    stopwatch_controller = StopwatchController(timer_model)
+    return stopwatch_controller
+
+
 def main() -> None:
     app = QtWidgets.QApplication([])
     app.setDesktopFileName(app_info.APP_ID)
 
     settings = get_settings_or_defaults(app_info.APP_ROOT / "data" / "settings.toml")
 
-    timer_model = TimerModel()
-    stopwatch_controller = StopwatchController(timer_model)
-
-    sqlite_connection = create_connection_factory(
-        app_info.APP_ROOT / "data" / "time_slice.db"
-    )
-    time_slice_repo = TimeSliceRepository(sqlite_connection)
-    time_slice_repo.ensure_table_created()
+    stopwatch_controller = make_stopwatch_controller()
+    time_slice_repo = make_time_slice_repo()
 
     window = MainWindow(settings, stopwatch_controller, time_slice_repo)
     window.show()
