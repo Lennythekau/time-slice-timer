@@ -5,6 +5,7 @@ from PySide6 import QtWidgets
 from PySide6.QtCore import Signal, Slot
 
 from settings import Settings
+from time_slice_controller import TimeSliceController
 
 
 class NewSliceForm(QtWidgets.QWidget):
@@ -15,7 +16,7 @@ class NewSliceForm(QtWidgets.QWidget):
 
     submitted = Signal(Data)
 
-    def __init__(self, settings: Settings):
+    def __init__(self, controller: TimeSliceController):
 
         super().__init__()
         self.__layout = QtWidgets.QVBoxLayout(self)
@@ -29,7 +30,7 @@ class NewSliceForm(QtWidgets.QWidget):
             placeholderText="Task description"
         )
         self.__tag_input = QtWidgets.QComboBox()
-        self.__tag_input.addItems(settings["tag_names"])
+        self.__tag_input.addItems(controller.get_tag_names())
 
         self.__duration_input = QtWidgets.QSpinBox(
             suffix=" min", value=5, singleStep=5, minimum=1, maximum=60

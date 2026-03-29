@@ -40,3 +40,6 @@ class TimerModel:
 
         time_spent = time.time() - self.__previous_start_time
         return self.__remaining_time - time_spent
+
+    def is_finished(self):
+        return self.get_remaining_time() <= 0

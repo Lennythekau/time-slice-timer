@@ -8,7 +8,6 @@ import rc_icons
 
 
 class Stopwatch(QtWidgets.QWidget):
-    started = QtCore.Signal()
     cancelled = QtCore.Signal()
     finished = QtCore.Signal()
 
@@ -47,10 +46,7 @@ class Stopwatch(QtWidgets.QWidget):
         return button
 
     def start(self, duration_minutes: int):
-        self.started.emit()
-
         seconds = duration_minutes * 60
-        self.__controller.start(seconds)
 
         self.__time_text.setEnabled(True)
         self.__time_text.setText(self.__format_time(seconds))
@@ -99,7 +95,7 @@ class Stopwatch(QtWidgets.QWidget):
         seconds_left = round(self.__controller.get_remaining_time())
 
         # Still have time left before we're done
-        if seconds_left > 0:
+        if not self.__controller.is_timer_finished():
             self.__time_text.setText(self.__format_time(seconds_left))
         else:
             self.__on_timer_finished()
