@@ -1,0 +1,41 @@
+
+# The default amount of time allocated to a time slice, in minutes
+default_duration = 5
+
+# Format:
+# [[tags]]
+# name = "tag-name"
+# duration = number
+#
+# The duration is optional. If it isn't provided, it will fall back on the default duration.
+
+[[tags]]
+name = "Blender"
+
+[[tags]]
+name = "Godot"
+
+[[tags]]
+name = "General Coding"
+
+[[tags]]
+name = "Musescore"
+
+[[tags]]
+name = "Quant"
+
+[[tags]]
+name = "Uni"
+
+[[tags]]
+name = "Chinese"
+
+[[tags]]
+name = "This"
+
+[[tags]]
+name = "Video"
+duration = 10
+
+[[tags]]
+name = "Misc"

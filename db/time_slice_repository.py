@@ -41,7 +41,7 @@ class TimeSliceRepository:
                         time_slice_id INTEGER PRIMARY KEY, 
                         created_at datetime, 
                         description TEXT, 
-                        tag TEXT, 
+                        tag_id INTEGER, 
                         duration INTEGER)"""
             )
             connection.execute(
