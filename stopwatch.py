@@ -22,6 +22,7 @@ class Stopwatch(QtWidgets.QWidget):
 
         self.__make_ui()
         self.__poll_timer = QtCore.QTimer(timerType=Qt.TimerType.VeryCoarseTimer)
+        self.__poll_timer_connection: QtCore.QMetaObject.Connection | None = None
 
         self.__repo = repo
         self.__user_session = user_session
@@ -56,9 +57,7 @@ class Stopwatch(QtWidgets.QWidget):
         self.__controls_box_layout.addWidget(button)
         return button
 
-    def __on_timer_start(self, duration_minutes: int):
-        seconds = duration_minutes * 60
-
+    def __on_timer_start(self, seconds: int):
         self.setEnabled(True)
         self.__time_text.setText(self.__format_time(seconds))
 
@@ -66,7 +65,9 @@ class Stopwatch(QtWidgets.QWidget):
         self.__pause_button.setEnabled(True)
         self.__cancel_button.setEnabled(True)
 
-        self.__poll_timer.timeout.connect(self.__on_poll_timer_timeout)
+        self.__poll_timer_connection = self.__poll_timer.timeout.connect(
+            self.__on_poll_timer_timeout
+        )
         self.__poll_timer.start(self.__TIMEOUT_INTERVAL)
 
     @QtCore.Slot()
@@ -75,7 +76,9 @@ class Stopwatch(QtWidgets.QWidget):
         self.__pause_button.setEnabled(True)
         self.__cancel_button.setEnabled(True)
 
-        self.__poll_timer.timeout.connect(self.__on_poll_timer_timeout)
+        self.__poll_timer_connection = self.__poll_timer.timeout.connect(
+            self.__on_poll_timer_timeout
+        )
         self.__poll_timer.start(self.__TIMEOUT_INTERVAL)
 
         self.__user_session.timer.unpause()
@@ -87,12 +90,16 @@ class Stopwatch(QtWidgets.QWidget):
         self.__cancel_button.setEnabled(True)
 
         self.__poll_timer.stop()
-        self.__poll_timer.timeout.disconnect(self.__on_poll_timer_timeout)
+        if self.__poll_timer_connection is not None:
+            self.__poll_timer.timeout.disconnect()
+
+        self.__user_session.timer.pause()
 
     @QtCore.Slot()
     def __cancel(self, _):
         self.__poll_timer.stop()
-        self.__poll_timer.timeout.disconnect(self.__on_poll_timer_timeout)
+        if self.__poll_timer_connection is not None:
+            self.__poll_timer.timeout.disconnect()
         self.__user_session.timer.cancel()
 
         self.setEnabled(False)
