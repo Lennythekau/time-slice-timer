@@ -1,9 +1,8 @@
-import datetime
 from dataclasses import dataclass
-import time
-from typing import cast, TYPE_CHECKING
+import datetime
+from typing import TYPE_CHECKING, cast
 
-from event import Event
+from lib.event import Event
 from time_slice import RunningTimeSlice, Tag, TimeSlice
 
 if TYPE_CHECKING:
@@ -12,7 +11,7 @@ if TYPE_CHECKING:
 
 
 @dataclass
-class TimeSliceRepository:
+class Repository:
     make_connection: Callable[[], sql.Connection]
 
     def __post_init__(self):

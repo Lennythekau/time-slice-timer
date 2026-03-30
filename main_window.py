@@ -2,17 +2,17 @@ from PySide6 import QtGui
 from PySide6 import QtWidgets
 
 import app_info
-from db.time_slice_repository import TimeSliceRepository
+from db.repository import Repository
 from new_slice_form import NewSliceForm
-from stopwatch import Stopwatch
+from stats.todays_totals_table import TodaysTotalsTable
+from stopwatch.widget import StopwatchWidget
 from times_up_dialog import TimesUpDialog
-from todays_totals_table import TodaysTotalsTable
 from user_session import UserSession
 
 
 class MainWindow(QtWidgets.QMainWindow):
 
-    def __init__(self, user_session: UserSession, repo: TimeSliceRepository):
+    def __init__(self, user_session: UserSession, repo: Repository):
         super().__init__()
 
         self.__user_session = user_session
@@ -24,7 +24,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.__toggle_todays_totals_table
         )
 
-        self.__user_session.timer.finished += self.__on_timer_finished
+        self.__user_session.stopwatch.finished += self.__on_timer_finished
 
     def __make_ui(self):
         self.setWindowTitle(app_info.APP_NAME)
@@ -36,13 +36,13 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.__new_slice_form = NewSliceForm(self.__user_session, self.__repo)
 
-        self.__stopwatch = Stopwatch(self.__user_session, self.__repo)
-        self.__stopwatch.setEnabled(False)
+        self.__stopwatch_widget = StopwatchWidget(self.__user_session, self.__repo)
+        self.__stopwatch_widget.setEnabled(False)
 
         self.__todays_totals_table = TodaysTotalsTable(self.__repo)
 
         self.__layout.addWidget(self.__new_slice_form)
-        self.__layout.addWidget(self.__stopwatch)
+        self.__layout.addWidget(self.__stopwatch_widget)
         self.__layout.addWidget(
             self.__todays_totals_table,
         )

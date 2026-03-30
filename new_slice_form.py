@@ -2,26 +2,26 @@ from PySide6 import QtGui
 from PySide6 import QtWidgets
 from PySide6.QtCore import Slot
 
-from db.time_slice_repository import TimeSliceRepository
+from db.repository import Repository
 from time_slice import RunningTimeSlice
 from user_session import UserSession
 
 
 class NewSliceForm(QtWidgets.QWidget):
 
-    def __init__(self, user_session: UserSession, repo: TimeSliceRepository):
+    def __init__(self, user_session: UserSession, repo: Repository):
 
         super().__init__()
 
-        self.__user_sesion = user_session
+        self.__user_session = user_session
         self.__repo = repo
 
         self.__make_ui()
         self.__setup_shortcuts()
 
-        self.__user_sesion.timer.started += lambda _: self.setEnabled(False)
-        self.__user_sesion.timer.finished += lambda _: self.setEnabled(True)
-        self.__user_sesion.timer.cancelled += lambda _: self.setEnabled(True)
+        self.__user_session.stopwatch.started += lambda _: self.setEnabled(False)
+        self.__user_session.stopwatch.finished += lambda _: self.setEnabled(True)
+        self.__user_session.stopwatch.cancelled += lambda _: self.setEnabled(True)
 
     def __make_ui(self):
         self.__layout = QtWidgets.QVBoxLayout(self)
@@ -91,4 +91,4 @@ class NewSliceForm(QtWidgets.QWidget):
             duration=self.__duration_input.value(),
         )
 
-        self.__user_sesion.start_time_slice(time_slice)
+        self.__user_session.start_time_slice(time_slice)

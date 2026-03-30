@@ -1,5 +1,5 @@
 from collections.abc import Callable
-from datetime import datetime, date
+from datetime import date, datetime
 import pathlib
 import sqlite3 as sql
 

@@ -1,9 +1,9 @@
 import time
 
-from event import Event
+from lib.event import Event
 
 
-class TimerModel:
+class StopwatchModel:
     UNSET = -1
 
     def __init__(self):
@@ -24,7 +24,7 @@ class TimerModel:
         self.__remaining_time: float = time_limit
         self.__is_paused = True
         self.__is_finished = False
-        self.__previous_start_time: float = TimerModel.UNSET
+        self.__previous_start_time: float = StopwatchModel.UNSET
 
     def start(self, time_limit: int):
         """

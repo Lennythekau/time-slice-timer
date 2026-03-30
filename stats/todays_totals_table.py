@@ -1,13 +1,12 @@
 from PySide6 import QtWidgets
 from PySide6.QtGui import Qt
 
-from db.time_slice_repository import TimeSliceRepository
-from user_session import UserSession
+from db.repository import Repository
 
 
 class TodaysTotalsTable(QtWidgets.QTableWidget):
 
-    def __init__(self, repo: TimeSliceRepository):
+    def __init__(self, repo: Repository):
         self.__repo = repo
 
         super().__init__()

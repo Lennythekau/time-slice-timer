@@ -3,7 +3,7 @@ from PySide6.QtGui import QIcon
 from PySide6 import QtWidgets, QtCore
 from PySide6.QtGui import Qt
 
-from db.time_slice_repository import TimeSliceRepository
+from db.repository import Repository
 import rc_icons
 from user_session import UserSession
 
@@ -13,9 +13,9 @@ from user_session import UserSession
 # But the issue is knowing who should be responsible for comitting the thing to a repo.
 
 
-class Stopwatch(QtWidgets.QWidget):
+class StopwatchWidget(QtWidgets.QWidget):
 
-    def __init__(self, user_session: UserSession, repo: TimeSliceRepository):
+    def __init__(self, user_session: UserSession, repo: Repository):
         self.__TIMEOUT_INTERVAL = 250
         self.__INITIAL_TEXT = "unset"
         super().__init__()
@@ -26,8 +26,8 @@ class Stopwatch(QtWidgets.QWidget):
 
         self.__repo = repo
         self.__user_session = user_session
-        self.__user_session.timer.started += self.__on_timer_start
-        self.__user_session.timer.finished += self.__on_timer_finish
+        self.__user_session.stopwatch.started += self.__on_timer_start
+        self.__user_session.stopwatch.finished += self.__on_timer_finish
 
     def __make_ui(self):
         self.__layout = QtWidgets.QVBoxLayout(self)
@@ -81,7 +81,7 @@ class Stopwatch(QtWidgets.QWidget):
         )
         self.__poll_timer.start(self.__TIMEOUT_INTERVAL)
 
-        self.__user_session.timer.unpause()
+        self.__user_session.stopwatch.unpause()
 
     @QtCore.Slot()
     def __pause(self):
@@ -93,14 +93,14 @@ class Stopwatch(QtWidgets.QWidget):
         if self.__poll_timer_connection is not None:
             self.__poll_timer.timeout.disconnect()
 
-        self.__user_session.timer.pause()
+        self.__user_session.stopwatch.pause()
 
     @QtCore.Slot()
     def __cancel(self, _):
         self.__poll_timer.stop()
         if self.__poll_timer_connection is not None:
             self.__poll_timer.timeout.disconnect()
-        self.__user_session.timer.cancel()
+        self.__user_session.stopwatch.cancel()
 
         self.setEnabled(False)
 
@@ -117,7 +117,7 @@ class Stopwatch(QtWidgets.QWidget):
 
     @QtCore.Slot()
     def __on_poll_timer_timeout(self):
-        seconds_left = round(self.__user_session.timer.update_time())
+        seconds_left = round(self.__user_session.stopwatch.update_time())
         self.__time_text.setText(self.__format_time(seconds_left))
 
     def __format_time(self, seconds: int):
