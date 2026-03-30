@@ -31,7 +31,7 @@ class StopwatchModel:
         :param time_limit: Time limit in seconds
         """
         self.reset(time_limit)
-        self.unpause()
+        self.resume()
 
         self.started.invoke(time_limit)
 
@@ -40,7 +40,7 @@ class StopwatchModel:
         time_spent = time.time() - self.__previous_start_time
         self.__remaining_time -= time_spent
 
-    def unpause(self):
+    def resume(self):
         self.__is_paused = False
         self.__previous_start_time = time.time()
 

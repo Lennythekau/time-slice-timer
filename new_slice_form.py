@@ -1,6 +1,6 @@
 from PySide6 import QtGui
 from PySide6 import QtWidgets
-from PySide6.QtCore import Slot
+from PySide6.QtCore import Signal, Slot
 
 from db.repository import Repository
 from time_slice import RunningTimeSlice
@@ -8,6 +8,7 @@ from user_session import UserSession
 
 
 class NewSliceForm(QtWidgets.QWidget):
+    submitted = Signal(RunningTimeSlice)
 
     def __init__(self, user_session: UserSession, repo: Repository):
 
@@ -91,4 +92,4 @@ class NewSliceForm(QtWidgets.QWidget):
             duration=self.__duration_input.value(),
         )
 
-        self.__user_session.start_time_slice(time_slice)
+        self.submitted.emit(time_slice)

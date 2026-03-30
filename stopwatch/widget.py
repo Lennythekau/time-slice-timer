@@ -3,19 +3,16 @@ from PySide6.QtGui import QIcon
 from PySide6 import QtWidgets, QtCore
 from PySide6.QtGui import Qt
 
-from db.repository import Repository
 import rc_icons
-from user_session import UserSession
-
-
-# This class is probably the only class which seems to justify having a controller
-# Having buttons to control when the timer pauses/cancels seems fine,
-# But the issue is knowing who should be responsible for comitting the thing to a repo.
+from stopwatch.controller import StopwatchController
+from stopwatch.model import StopwatchModel
 
 
 class StopwatchWidget(QtWidgets.QWidget):
 
-    def __init__(self, user_session: UserSession, repo: Repository):
+    def __init__(
+        self, stopwatch_model: StopwatchModel, stopwatch_controller: StopwatchController
+    ):
         self.__TIMEOUT_INTERVAL = 250
         self.__INITIAL_TEXT = "unset"
         super().__init__()
@@ -24,10 +21,10 @@ class StopwatchWidget(QtWidgets.QWidget):
         self.__poll_timer = QtCore.QTimer(timerType=Qt.TimerType.VeryCoarseTimer)
         self.__poll_timer_connection: QtCore.QMetaObject.Connection | None = None
 
-        self.__repo = repo
-        self.__user_session = user_session
-        self.__user_session.stopwatch.started += self.__on_timer_start
-        self.__user_session.stopwatch.finished += self.__on_timer_finish
+        self.__stopwatch_controller = stopwatch_controller
+        self.__model = stopwatch_model
+        self.__model.started += self.__on_timer_start
+        self.__model.finished += self.__on_timer_finish
 
     def __make_ui(self):
         self.__layout = QtWidgets.QVBoxLayout(self)
@@ -58,7 +55,6 @@ class StopwatchWidget(QtWidgets.QWidget):
         return button
 
     def __on_timer_start(self, seconds: int):
-        self.setEnabled(True)
         self.__time_text.setText(self.__format_time(seconds))
 
         self.__play_button.setEnabled(False)
@@ -80,8 +76,7 @@ class StopwatchWidget(QtWidgets.QWidget):
             self.__on_poll_timer_timeout
         )
         self.__poll_timer.start(self.__TIMEOUT_INTERVAL)
-
-        self.__user_session.stopwatch.unpause()
+        self.__stopwatch_controller.resume()
 
     @QtCore.Slot()
     def __pause(self):
@@ -90,34 +85,33 @@ class StopwatchWidget(QtWidgets.QWidget):
         self.__cancel_button.setEnabled(True)
 
         self.__poll_timer.stop()
-        if self.__poll_timer_connection is not None:
-            self.__poll_timer.timeout.disconnect()
 
-        self.__user_session.stopwatch.pause()
+        assert self.__poll_timer_connection is not None
+        self.__poll_timer.timeout.disconnect(self.__poll_timer_connection)
+        self.__poll_timer_connection = None
+
+        self.__stopwatch_controller.pause()
 
     @QtCore.Slot()
     def __cancel(self, _):
         self.__poll_timer.stop()
-        if self.__poll_timer_connection is not None:
-            self.__poll_timer.timeout.disconnect()
-        self.__user_session.stopwatch.cancel()
 
-        self.setEnabled(False)
+        # Connection might be None, since we can cancel, while paused,
+        # And when we pause, we set the connection to None (see above).
+        if self.__poll_timer_connection is not None:
+            self.__poll_timer.timeout.disconnect(self.__poll_timer_connection)
+            self.__poll_timer_connection = None
+
+        self.__stopwatch_controller.cancel()
 
     def __on_timer_finish(self, _):
         if self.__poll_timer.isActive():
             self.__poll_timer.stop()
         self.__time_text.setText(self.__INITIAL_TEXT)
 
-        self.setEnabled(False)
-
-        time_slice = self.__user_session.get_time_slice()
-        assert time_slice is not None
-        self.__repo.add_slice(time_slice)
-
     @QtCore.Slot()
     def __on_poll_timer_timeout(self):
-        seconds_left = round(self.__user_session.stopwatch.update_time())
+        seconds_left = round(self.__model.update_time())
         self.__time_text.setText(self.__format_time(seconds_left))
 
     def __format_time(self, seconds: int):
