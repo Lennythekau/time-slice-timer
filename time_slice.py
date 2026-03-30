@@ -8,7 +8,7 @@ class RunningTimeSlice(NamedTuple):
     """
 
     description: str
-    tag: str
+    tag: Tag
     duration: int
 
 
@@ -20,5 +20,16 @@ class TimeSlice(NamedTuple):
     time_slice_id: int
     date: datetime
     description: str
-    tag: str
+    tag: Tag
     duration: int
+
+    def __hash__(self):
+        return hash(self.time_slice_id)
+
+
+class Tag(NamedTuple):
+    tag_id: int
+    name: str
+
+    def __hash__(self):
+        return hash(self.tag_id)

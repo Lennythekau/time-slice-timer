@@ -1,24 +1,29 @@
-from typing import NamedTuple
-
 from PySide6 import QtGui
 from PySide6 import QtWidgets
-from PySide6.QtCore import Signal, Slot
+from PySide6.QtCore import Slot
 
-from settings import Settings
-from time_slice_controller import TimeSliceController
+from db.time_slice_repository import TimeSliceRepository
+from time_slice import RunningTimeSlice
+from user_session import UserSession
 
 
 class NewSliceForm(QtWidgets.QWidget):
-    class Data(NamedTuple):
-        description: str
-        tag: str
-        duration: int
 
-    submitted = Signal(Data)
-
-    def __init__(self, controller: TimeSliceController):
+    def __init__(self, user_session: UserSession, repo: TimeSliceRepository):
 
         super().__init__()
+
+        self.__user_sesion = user_session
+        self.__repo = repo
+
+        self.__make_ui()
+        self.__setup_shortcuts()
+
+        self.__user_sesion.timer.started += lambda _: self.setEnabled(False)
+        self.__user_sesion.timer.finished += lambda _: self.setEnabled(True)
+        self.__user_sesion.timer.cancelled += lambda _: self.setEnabled(True)
+
+    def __make_ui(self):
         self.__layout = QtWidgets.QVBoxLayout(self)
         self.__layout.setSpacing(0)
 
@@ -30,7 +35,7 @@ class NewSliceForm(QtWidgets.QWidget):
             placeholderText="Task description"
         )
         self.__tag_input = QtWidgets.QComboBox()
-        self.__tag_input.addItems(controller.get_tag_names())
+        self.__set_tag_input_items()
 
         self.__duration_input = QtWidgets.QSpinBox(
             suffix=" min", value=5, singleStep=5, minimum=1, maximum=60
@@ -39,12 +44,15 @@ class NewSliceForm(QtWidgets.QWidget):
         self.__submit_button = QtWidgets.QPushButton("Start")
         self.__submit_button.clicked.connect(self.__on_submit_button_clicked)
 
-        self.__setup_shortcuts()
-
         self.__layout.addWidget(self.__description_input)
         self.__layout.addWidget(self.__tag_input)
         self.__layout.addWidget(self.__duration_input)
         self.__layout.addWidget(self.__submit_button)
+
+    def __set_tag_input_items(self):
+        self.__tag_input.clear()
+        for tag in self.__repo.get_tags():
+            self.__tag_input.addItem(tag.name, tag)
 
     def __setup_focus_shortcuts(self):
         form_widgets = (
@@ -75,13 +83,12 @@ class NewSliceForm(QtWidgets.QWidget):
         self.__setup_focus_shortcuts()
         self.__setup_submit_shortcut()
 
-    def get_form_data(self):
-        return NewSliceForm.Data(
+    @Slot()
+    def __on_submit_button_clicked(self):
+        time_slice = RunningTimeSlice(
             description=self.__description_input.text(),
-            tag=self.__tag_input.currentText(),
+            tag=self.__tag_input.currentData(),
             duration=self.__duration_input.value(),
         )
 
-    @Slot()
-    def __on_submit_button_clicked(self):
-        self.submitted.emit(self.get_form_data())
+        self.__user_sesion.start_time_slice(time_slice)

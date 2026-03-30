@@ -1,26 +1,37 @@
 from PySide6 import QtWidgets
 from PySide6.QtGui import Qt
 
+from db.time_slice_repository import TimeSliceRepository
+from user_session import UserSession
+
 
 class TodaysTotalsTable(QtWidgets.QTableWidget):
-    def __init__(self):
-        super().__init__()
 
+    def __init__(self, repo: TimeSliceRepository):
+        self.__repo = repo
+
+        super().__init__()
+        self.__make_ui()
+        self.__update_times(None)
+
+        self.__repo.time_slice_added += self.__update_times
+
+    def __make_ui(self):
         self.horizontalHeader().setVisible(True)
         self.setFocusPolicy(Qt.FocusPolicy.NoFocus)
 
         # tag name, total
         self.setColumnCount(2)
-
         self.verticalHeader().setVisible(False)
 
-    def update_times(self, totals: dict[str, int]):
-        self.setRowCount(len(totals))
+    def __update_times(self, _):
+        times = self.__repo.get_times_by_tag()
+        self.setRowCount(len(times))
         self.setHorizontalHeaderLabels(["Tag", "Total"])
 
-        for row_number, (tag_name, total) in enumerate(totals.items()):
+        for row_number, (tag, total) in enumerate(times):
             # Add tag
-            tag_table_item = QtWidgets.QTableWidgetItem(tag_name)
+            tag_table_item = QtWidgets.QTableWidgetItem(tag.name)
             tag_table_item.setFlags(
                 tag_table_item.flags() & ~Qt.ItemFlag.ItemIsEditable
             )

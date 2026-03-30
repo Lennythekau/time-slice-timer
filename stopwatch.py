@@ -3,23 +3,36 @@ from PySide6.QtGui import QIcon
 from PySide6 import QtWidgets, QtCore
 from PySide6.QtGui import Qt
 
-from stopwatch_controller import StopwatchController
+from db.time_slice_repository import TimeSliceRepository
 import rc_icons
+from user_session import UserSession
+
+
+# This class is probably the only class which seems to justify having a controller
+# Having buttons to control when the timer pauses/cancels seems fine,
+# But the issue is knowing who should be responsible for comitting the thing to a repo.
 
 
 class Stopwatch(QtWidgets.QWidget):
-    cancelled = QtCore.Signal()
-    finished = QtCore.Signal()
 
-    def __init__(self, stopwatch_controller: StopwatchController):
+    def __init__(self, user_session: UserSession, repo: TimeSliceRepository):
+        self.__TIMEOUT_INTERVAL = 250
+        self.__INITIAL_TEXT = "unset"
         super().__init__()
-        self.__controller = stopwatch_controller
 
+        self.__make_ui()
+        self.__poll_timer = QtCore.QTimer(timerType=Qt.TimerType.VeryCoarseTimer)
+
+        self.__repo = repo
+        self.__user_session = user_session
+        self.__user_session.timer.started += self.__on_timer_start
+        self.__user_session.timer.finished += self.__on_timer_finish
+
+    def __make_ui(self):
         self.__layout = QtWidgets.QVBoxLayout(self)
 
-        self.__time_text = QtWidgets.QLabel("unset")
+        self.__time_text = QtWidgets.QLabel(self.__INITIAL_TEXT)
         self.__time_text.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.__time_text.setEnabled(False)
 
         self.__controls_box = QtWidgets.QGroupBox()
         self.__controls_box_layout = QtWidgets.QHBoxLayout(self.__controls_box)
@@ -32,8 +45,6 @@ class Stopwatch(QtWidgets.QWidget):
         self.__layout.addWidget(self.__time_text)
         self.__layout.addWidget(self.__controls_box)
 
-        self.__timer = QtCore.QTimer(timerType=Qt.TimerType.VeryCoarseTimer)
-
     def __control_button(self, name: str, slot: Callable):
         icon = QIcon(f":/assets/{name}.svg")
         ICON_SIZE = 32
@@ -45,60 +56,62 @@ class Stopwatch(QtWidgets.QWidget):
         self.__controls_box_layout.addWidget(button)
         return button
 
-    def start(self, duration_minutes: int):
+    def __on_timer_start(self, duration_minutes: int):
         seconds = duration_minutes * 60
 
-        self.__time_text.setEnabled(True)
+        self.setEnabled(True)
         self.__time_text.setText(self.__format_time(seconds))
 
         self.__play_button.setEnabled(False)
         self.__pause_button.setEnabled(True)
         self.__cancel_button.setEnabled(True)
 
-        self.__timer.timeout.connect(self.__on_timer_timeout)
-        self.__timer.start(250)
+        self.__poll_timer.timeout.connect(self.__on_poll_timer_timeout)
+        self.__poll_timer.start(self.__TIMEOUT_INTERVAL)
 
     @QtCore.Slot()
     def __resume(self):
-        self.__controller.unpause()
-
         self.__play_button.setEnabled(False)
         self.__pause_button.setEnabled(True)
         self.__cancel_button.setEnabled(True)
 
-        self.__timer.timeout.connect(self.__on_timer_timeout)
-        self.__timer.start(250)
+        self.__poll_timer.timeout.connect(self.__on_poll_timer_timeout)
+        self.__poll_timer.start(self.__TIMEOUT_INTERVAL)
+
+        self.__user_session.timer.unpause()
 
     @QtCore.Slot()
     def __pause(self):
-        self.__controller.pause()
-
         self.__play_button.setEnabled(True)
         self.__pause_button.setEnabled(False)
         self.__cancel_button.setEnabled(True)
 
-        self.__timer.stop()
+        self.__poll_timer.stop()
+        self.__poll_timer.timeout.disconnect(self.__on_poll_timer_timeout)
 
     @QtCore.Slot()
-    def __cancel(self):
-        self.cancelled.emit()
-        self.__controller.cancel()
-        self.__timer.stop()
+    def __cancel(self, _):
+        self.__poll_timer.stop()
+        self.__poll_timer.timeout.disconnect(self.__on_poll_timer_timeout)
+        self.__user_session.timer.cancel()
 
-    def __on_timer_finished(self):
-        if self.__timer.isActive():
-            self.finished.emit()
-            self.__timer.stop()
+        self.setEnabled(False)
+
+    def __on_timer_finish(self, _):
+        if self.__poll_timer.isActive():
+            self.__poll_timer.stop()
+        self.__time_text.setText(self.__INITIAL_TEXT)
+
+        self.setEnabled(False)
+
+        time_slice = self.__user_session.get_time_slice()
+        assert time_slice is not None
+        self.__repo.add_slice(time_slice)
 
     @QtCore.Slot()
-    def __on_timer_timeout(self):
-        seconds_left = round(self.__controller.get_remaining_time())
-
-        # Still have time left before we're done
-        if not self.__controller.is_timer_finished():
-            self.__time_text.setText(self.__format_time(seconds_left))
-        else:
-            self.__on_timer_finished()
+    def __on_poll_timer_timeout(self):
+        seconds_left = round(self.__user_session.timer.update_time())
+        self.__time_text.setText(self.__format_time(seconds_left))
 
     def __format_time(self, seconds: int):
         return f"{seconds//60:02}:{seconds%60:02}"

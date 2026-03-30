@@ -4,7 +4,10 @@ import pathlib
 import sqlite3 as sql
 
 
-def __adapt_date_iso(val):
+datetime.now()
+
+
+def __adapt_date_iso(val: date):
     """Adapt datetime.date to ISO 8601 date."""
     return val.isoformat()
 

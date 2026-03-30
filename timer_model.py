@@ -1,5 +1,7 @@
 import time
 
+from event import Event
+
 
 class TimerModel:
     UNSET = -1
@@ -9,6 +11,11 @@ class TimerModel:
         Creates a new `TimerModel`.
         """
         self.__is_paused = True
+        self.__is_finished = False
+
+        self.started = Event[int]()
+        self.finished = Event[None]()
+        self.cancelled = Event[None]()
 
     def reset(self, time_limit: int = UNSET):
         """
@@ -16,6 +23,7 @@ class TimerModel:
         """
         self.__remaining_time: float = time_limit
         self.__is_paused = True
+        self.__is_finished = False
         self.__previous_start_time: float = TimerModel.UNSET
 
     def start(self, time_limit: int):
@@ -24,6 +32,8 @@ class TimerModel:
         """
         self.reset(time_limit)
         self.unpause()
+
+        self.started.invoke(time_limit)
 
     def pause(self):
         self.__is_paused = True
@@ -34,12 +44,28 @@ class TimerModel:
         self.__is_paused = False
         self.__previous_start_time = time.time()
 
-    def get_remaining_time(self) -> float:
+    def cancel(self):
+        self.reset()
+        self.cancelled.invoke(None)
+
+    def __get_remaining_time(self) -> float:
         if self.__is_paused:
             return self.__remaining_time
 
         time_spent = time.time() - self.__previous_start_time
-        return self.__remaining_time - time_spent
+        time_left = self.__remaining_time - time_spent
+        return time_left
 
-    def is_finished(self):
-        return self.get_remaining_time() <= 0
+    def update_time(self):
+
+        time_left = self.__get_remaining_time()
+
+        if self.__is_finished:
+            return 0
+
+        if time_left <= 0:
+            self.__is_paused = True
+            self.__is_finished = True
+            self.finished.invoke(None)
+
+        return time_left

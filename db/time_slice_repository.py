@@ -1,8 +1,10 @@
 import datetime
 from dataclasses import dataclass
+import time
 from typing import cast, TYPE_CHECKING
 
-from time_slice import TimeSlice
+from event import Event
+from time_slice import RunningTimeSlice, Tag, TimeSlice
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -12,6 +14,9 @@ if TYPE_CHECKING:
 @dataclass
 class TimeSliceRepository:
     make_connection: Callable[[], sql.Connection]
+
+    def __post_init__(self):
+        self.time_slice_added = Event[TimeSlice]()
 
     def __convert_rows_to_time_slices(self, rows: list[tuple]):
         return [TimeSlice(*row) for row in rows]
@@ -27,7 +32,7 @@ class TimeSliceRepository:
 
         return date
 
-    def ensure_table_created(self):
+    def ensure_tables_created(self):
         # PARSE_DECLTYPES so that the types given in the creating table syntax
         # are enough for the converter/adapter methods to be called.
         with self.make_connection() as connection:
@@ -39,28 +44,53 @@ class TimeSliceRepository:
                         tag TEXT, 
                         duration INTEGER)"""
             )
+            connection.execute(
+                """CREATE TABLE IF NOT EXISTS tag(
+                        tag_id INTEGER PRIMARY KEY, 
+                        name TEXT UNIQUE NOT NULL)"""
+            )
         connection.close()
 
-    def add(
+    def add_slice(
         self,
-        description: str,
-        tag: str,
-        duration_minutes: int,
+        time_slice: RunningTimeSlice,
         date: datetime.datetime | None = None,
     ):
         date = datetime.datetime.now() if date is None else date
 
         with self.make_connection() as connection:
             cursor = connection.execute(
-                """INSERT INTO time_slice(description, tag, duration, created_at) 
+                """INSERT INTO time_slice(description, tag_id, duration, created_at) 
                     VALUES (?, ?, ?, ?)""",
-                (description, tag, duration_minutes, date),
+                (
+                    time_slice.description,
+                    time_slice.tag.tag_id,
+                    time_slice.duration,
+                    date,
+                ),
             )
 
         connection.close()
 
         time_slice_id = cast(int, cursor.lastrowid)
-        return TimeSlice(time_slice_id, date, description, tag, duration_minutes)
+        created_time_slice = TimeSlice(time_slice_id, date, *time_slice)
+
+        self.time_slice_added.invoke(created_time_slice)
+        return created_time_slice
+
+    def add_tag(self, name: str):
+        with self.make_connection() as connection:
+            cursor = connection.execute("""INSERT INTO tag(name) VALUES (?)""", (name))
+        connection.close()
+
+        tag_id = cast(int, cursor.lastrowid)
+        return Tag(tag_id=tag_id, name=name)
+
+    def get_tags(self) -> list[Tag]:
+        with self.make_connection() as connection:
+            tag_rows = connection.execute("SELECT tag_id, name FROM tag").fetchall()
+        connection.close()
+        return [Tag(*row) for row in tag_rows]
 
     def get_by_date(self, date: datetime.date | None = None) -> list[TimeSlice]:
         date = self.__ensure_date_only(date)
@@ -74,16 +104,27 @@ class TimeSliceRepository:
 
         return self.__convert_rows_to_time_slices(rows)
 
-    def get_times_by_tag(
-        self, date: datetime.date | None = None
-    ) -> list[tuple[str, int]]:
+    def get_times_by_tag(self, date: datetime.date | None = None):
         date = self.__ensure_date_only(date)
 
         with self.make_connection() as connection:
             rows = connection.execute(
-                f"SELECT tag, SUM(duration) FROM time_slice WHERE DATE(created_at)=? GROUP BY tag",
+                """SELECT tag.tag_id, tag.name, COALESCE(s.total, 0) 
+                   FROM (SELECT ts.tag_id, SUM(ts.duration) AS total 
+                        FROM time_slice ts 
+                        WHERE date(ts.created_at) = ?
+                        GROUP BY ts.tag_id)
+                   AS s RIGHT JOIN tag 
+                   ON tag.tag_id = s.tag_id""",
                 (date,),
             ).fetchall()
 
         connection.close()
-        return rows
+
+        rows = cast(list[tuple[int, str, int]], rows)
+
+        times = []
+        for tag_id, name, total in rows:
+            times.append((Tag(tag_id, name), total))
+
+        return times
