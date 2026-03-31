@@ -8,6 +8,7 @@ from db.sqlite_setup import create_connection_factory, register_adapters
 from main_window import MainWindow
 from stopwatch.controller import StopwatchController
 from stopwatch.model import StopwatchModel
+from tag_view_controller import TagViewController
 from time_slice_controller import TimeSliceController
 from user_session import UserSession
 
@@ -36,8 +37,15 @@ def main() -> None:
     # Controllers
     stopwatch_controller = StopwatchController(stopwatch_model)
     time_slice_controller = TimeSliceController(user_session, repo)
+    tag_view_controller = TagViewController(repo)
 
-    window = MainWindow(user_session, repo, stopwatch_controller, time_slice_controller)
+    window = MainWindow(
+        user_session,
+        repo,
+        stopwatch_controller,
+        time_slice_controller,
+        tag_view_controller,
+    )
     window.show()
 
     sys.exit(app.exec())

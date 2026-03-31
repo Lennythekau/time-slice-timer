@@ -1,5 +1,6 @@
 from PySide6 import QtGui
 from PySide6 import QtWidgets
+from PySide6.QtCore import Slot
 
 import app_info
 from db.repository import Repository
@@ -7,6 +8,8 @@ from new_slice_form import NewSliceForm
 from stats.todays_totals_table import TodaysTotalsTable
 from stopwatch.controller import StopwatchController
 from stopwatch.widget import StopwatchWidget
+from tag_view_controller import TagViewController
+from tag_view_window import TagViewWindow
 from time_slice import RunningTimeSlice
 from time_slice_controller import TimeSliceController
 from times_up_dialog import TimesUpDialog
@@ -21,12 +24,14 @@ class MainWindow(QtWidgets.QMainWindow):
         repo: Repository,
         stopwatch_controller: StopwatchController,
         time_slice_controller: TimeSliceController,
+        tag_view_controller: TagViewController,
     ):
         super().__init__()
 
         self.__user_session = user_session
         self.__stopwatch_controller = stopwatch_controller
         self.__time_slice_controller = time_slice_controller
+        self.__tag_view_controller = tag_view_controller
         self.__repo = repo
 
         self.__make_ui()
@@ -40,6 +45,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def __make_ui(self):
         self.setWindowTitle(app_info.APP_NAME)
+
+        self.__tag_view_window = TagViewWindow(self.__repo, self.__tag_view_controller)
 
         self.setCentralWidget(QtWidgets.QWidget())
         self.__layout = QtWidgets.QVBoxLayout(self.centralWidget())
@@ -62,10 +69,25 @@ class MainWindow(QtWidgets.QMainWindow):
             self.__todays_totals_table,
         )
 
+        self.__make_toolbar()
+
         # self.layout().setSizeConstraint(QtWidgets.QLayout.SizeConstraint.SetMinimumSize)  # type: ignore
         self.setSizePolicy(
             QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Minimum
         )
+
+    def __make_toolbar(self):
+        self.__toolbar = self.addToolBar("Toolbar!")
+
+        tag_view_button = QtWidgets.QPushButton("Tags")
+        self.foo = []
+
+        @Slot()
+        def on_tag_view_button_pressed():
+            self.__tag_view_window.show()
+
+        tag_view_button.clicked.connect(on_tag_view_button_pressed)
+        self.__toolbar.addWidget(tag_view_button)
 
     def __toggle_todays_totals_table(self):
         self.__todays_totals_table.setVisible(

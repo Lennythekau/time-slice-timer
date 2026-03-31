@@ -11,9 +11,10 @@ class TodaysTotalsTable(QtWidgets.QTableWidget):
 
         super().__init__()
         self.__make_ui()
-        self.__update_times(None)
+        self.__update_times()
 
-        self.__repo.time_slice_added += self.__update_times
+        self.__repo.time_slice_added += lambda _: self.__update_times()
+        self.__repo.tags_changed += lambda _: self.__update_times()
 
     def __make_ui(self):
         self.horizontalHeader().setVisible(True)
@@ -23,7 +24,7 @@ class TodaysTotalsTable(QtWidgets.QTableWidget):
         self.setColumnCount(2)
         self.verticalHeader().setVisible(False)
 
-    def __update_times(self, _):
+    def __update_times(self):
         times = self.__repo.get_times_by_tag()
         self.setRowCount(len(times))
         self.setHorizontalHeaderLabels(["Tag", "Total"])

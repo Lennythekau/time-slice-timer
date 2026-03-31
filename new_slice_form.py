@@ -24,6 +24,8 @@ class NewSliceForm(QtWidgets.QWidget):
         self.__user_session.stopwatch.finished += lambda _: self.setEnabled(True)
         self.__user_session.stopwatch.cancelled += lambda _: self.setEnabled(True)
 
+        self.__repo.tags_changed += lambda _: self.__update_tag_input_items()
+
     def __make_ui(self):
         self.__layout = QtWidgets.QVBoxLayout(self)
         self.__layout.setSpacing(0)
@@ -36,7 +38,7 @@ class NewSliceForm(QtWidgets.QWidget):
             placeholderText="Task description"
         )
         self.__tag_input = QtWidgets.QComboBox()
-        self.__set_tag_input_items()
+        self.__update_tag_input_items()
 
         self.__duration_input = QtWidgets.QSpinBox(
             suffix=" min", value=5, singleStep=5, minimum=1, maximum=60
@@ -50,7 +52,7 @@ class NewSliceForm(QtWidgets.QWidget):
         self.__layout.addWidget(self.__duration_input)
         self.__layout.addWidget(self.__submit_button)
 
-    def __set_tag_input_items(self):
+    def __update_tag_input_items(self):
         self.__tag_input.clear()
         for tag in self.__repo.get_tags():
             self.__tag_input.addItem(tag.name, tag)
