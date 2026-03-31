@@ -1,25 +1,21 @@
 from dataclasses import dataclass
 import datetime
-from typing import TYPE_CHECKING, cast
+from typing import cast
 
 from lib.event import Event
 from time_slice.model import RunningTimeSlice, TimeSlice
 from tag.model import Tag
 
-if TYPE_CHECKING:
-    from collections.abc import Callable
-    import sqlite3 as sql
+from collections.abc import Callable
+import sqlite3 as sql
 
 
 @dataclass
-class Repository:
+class TimeSliceRepo:
     make_connection: Callable[[], sql.Connection]
 
     def __post_init__(self):
         self.time_slice_added = Event[TimeSlice]()
-
-        # TODO: Decide if we should change this to a more granular system (tag_added, tag_removed etc)
-        self.tags_changed = Event[None]()
 
     def __convert_rows_to_time_slices(self, rows: list[tuple]):
         return [TimeSlice(*row) for row in rows]
@@ -80,40 +76,6 @@ class Repository:
 
         self.time_slice_added.invoke(created_time_slice)
         return created_time_slice
-
-    def add_tag(self, name: str):
-        with self.make_connection() as connection:
-            cursor = connection.execute("""INSERT INTO tag(name) VALUES (?)""", (name,))
-        connection.close()
-
-        tag_id = cast(int, cursor.lastrowid)
-        tag = Tag(tag_id=tag_id, name=name)
-        self.tags_changed.invoke(None)
-        return tag
-
-    def edit_tag(self, old_name: str, new_name: str):
-        with self.make_connection() as connection:
-            cursor = connection.execute(
-                """UPDATE tag SET name=? WHERE name=?""", (new_name, old_name)
-            )
-        connection.close()
-
-        tag_id = cast(int, cursor.lastrowid)
-        tag = Tag(tag_id=tag_id, name=new_name)
-        self.tags_changed.invoke(None)
-        return tag
-
-    def delete_tag(self, name: str):
-        with self.make_connection() as connection:
-            connection.execute("DELETE FROM tag WHERE name=?", (name,))
-        connection.close()
-        self.tags_changed.invoke(None)
-
-    def get_tags(self) -> list[Tag]:
-        with self.make_connection() as connection:
-            tag_rows = connection.execute("SELECT tag_id, name FROM tag").fetchall()
-        connection.close()
-        return [Tag(*row) for row in tag_rows]
 
     def get_by_date(self, date: datetime.date | None = None) -> list[TimeSlice]:
         date = self.__ensure_date_only(date)

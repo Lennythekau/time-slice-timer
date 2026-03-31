@@ -3,17 +3,18 @@ from PySide6 import QtWidgets
 from PySide6.QtCore import Slot
 
 import app_info
-from db.repository import Repository
 from stats.todays_totals_table import TodaysTotalsTable
 from stopwatch.controller import StopwatchController
 from stopwatch.widget import StopwatchWidget
 from tag.controller import TagController
 from tag.dialog import TagDialog
+from tag.repo import TagRepo
 from user_session import UserSession
 
 from .controller import TimeSliceController
 from .form import NewSliceForm
 from .model import RunningTimeSlice
+from .repo import TimeSliceRepo
 from .times_up_dialog import TimesUpDialog
 
 
@@ -22,7 +23,8 @@ class TimeSliceWindow(QtWidgets.QMainWindow):
     def __init__(
         self,
         user_session: UserSession,
-        repo: Repository,
+        time_slice_repo: TimeSliceRepo,
+        tag_repo: TagRepo,
         stopwatch_controller: StopwatchController,
         time_slice_controller: TimeSliceController,
         tag_view_controller: TagController,
@@ -32,8 +34,9 @@ class TimeSliceWindow(QtWidgets.QMainWindow):
         self.__user_session = user_session
         self.__stopwatch_controller = stopwatch_controller
         self.__time_slice_controller = time_slice_controller
-        self.__tag_view_controller = tag_view_controller
-        self.__repo = repo
+        self.__tag_controller = tag_view_controller
+        self.__time_slice_repo = time_slice_repo
+        self.__tag_repo = tag_repo
 
         self.__make_ui()
 
@@ -47,14 +50,14 @@ class TimeSliceWindow(QtWidgets.QMainWindow):
     def __make_ui(self):
         self.setWindowTitle(app_info.APP_NAME)
 
-        self.__tag_view_window = TagDialog(self.__repo, self.__tag_view_controller)
+        self.__tag_dialog: TagDialog | None = None
 
         self.setCentralWidget(QtWidgets.QWidget())
         self.__layout = QtWidgets.QVBoxLayout(self.centralWidget())
         self.__layout.setContentsMargins(5, 5, 5, 5)
         self.__layout.setSpacing(0)
 
-        self.__new_slice_form = NewSliceForm(self.__user_session, self.__repo)
+        self.__new_slice_form = NewSliceForm(self.__user_session, self.__tag_repo)
         self.__new_slice_form.submitted.connect(self.__on_new_slice_form_submitted)
 
         self.__stopwatch_widget = StopwatchWidget(
@@ -62,7 +65,9 @@ class TimeSliceWindow(QtWidgets.QMainWindow):
         )
         self.__stopwatch_widget.setEnabled(False)
 
-        self.__todays_totals_table = TodaysTotalsTable(self.__repo)
+        self.__todays_totals_table = TodaysTotalsTable(
+            self.__time_slice_repo, self.__tag_repo
+        )
 
         self.__layout.addWidget(self.__new_slice_form)
         self.__layout.addWidget(self.__stopwatch_widget)
@@ -79,16 +84,27 @@ class TimeSliceWindow(QtWidgets.QMainWindow):
 
     def __make_toolbar(self):
         self.__toolbar = self.addToolBar("Toolbar!")
-
-        tag_view_button = QtWidgets.QPushButton("Tags")
-        self.foo = []
+        self.__toolbar.setMovable(False)  # moving this toolbar would just be silly.
 
         @Slot()
-        def on_tag_view_button_pressed():
-            self.__tag_view_window.show()
+        def show_tag_dialog():
+            if self.__tag_dialog is None:
+                self.__tag_dialog = TagDialog(self.__tag_repo, self.__tag_controller)
+            self.__tag_dialog.show()
 
-        tag_view_button.clicked.connect(on_tag_view_button_pressed)
-        self.__toolbar.addWidget(tag_view_button)
+        @Slot()
+        def show_task_dialog():
+            if self.__tag_dialog is None:
+                self.__tag_dialog = TagDialog(self.__tag_repo, self.__tag_controller)
+            self.__tag_dialog.show()
+
+        tags_action = QtGui.QAction("Tags", self.__toolbar)
+        tags_action.triggered.connect(show_tag_dialog)
+        self.__toolbar.addAction(tags_action)
+
+        task_action = QtGui.QAction("Tasks", self.__toolbar)
+        tags_action.triggered.connect(show_task_dialog)
+        self.__toolbar.addAction(task_action)
 
     def __toggle_todays_totals_table(self):
         self.__todays_totals_table.setVisible(

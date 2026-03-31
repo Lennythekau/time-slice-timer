@@ -1,11 +1,11 @@
 import sqlite3
 
-from db.repository import Repository
+from .repo import TagRepo
 
 
 class TagController:
 
-    def __init__(self, repo: Repository):
+    def __init__(self, repo: TagRepo):
         self.__repo = repo
         self.current_text: str | None = None
 

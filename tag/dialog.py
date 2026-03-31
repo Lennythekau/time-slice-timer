@@ -3,15 +3,14 @@ from typing import Literal
 from PySide6 import QtWidgets
 from PySide6.QtCore import Slot
 
-from db.repository import Repository
-
 from .controller import TagController
+from .repo import TagRepo
 
 
 class TagDialog(QtWidgets.QDialog):
-    def __init__(self, repo: Repository, tag_view_controller: TagController):
+    def __init__(self, tag_repo: TagRepo, tag_view_controller: TagController):
         super().__init__()
-        self.__repo = repo
+        self.__tag_repo = tag_repo
         self.__tag_view_controller = tag_view_controller
         self.__mode: Literal["Add"] | Literal["Edit"] = "Add"
 
@@ -30,7 +29,7 @@ class TagDialog(QtWidgets.QDialog):
         self.__tags_list.setSelectionMode(
             QtWidgets.QAbstractItemView.SelectionMode.MultiSelection
         )
-        self.__tags_list.addItems([tag.name for tag in self.__repo.get_tags()])
+        self.__tags_list.addItems([tag.name for tag in self.__tag_repo.get_tags()])
         self.__tags_list.itemSelectionChanged.connect(self.__selection_changed)
 
         self.__error_message = QtWidgets.QLabel()
@@ -139,7 +138,7 @@ class TagDialog(QtWidgets.QDialog):
         # Clear any error message
         self.__discard_error()
 
-        names = [tag.name for tag in self.__repo.get_tags()]
+        names = [tag.name for tag in self.__tag_repo.get_tags()]
         self.__tags_list.clear()
         self.__tags_list.addItems(names)
 

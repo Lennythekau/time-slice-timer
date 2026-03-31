@@ -1,20 +1,22 @@
 from PySide6 import QtWidgets
 from PySide6.QtGui import Qt
 
-from db.repository import Repository
+from tag.repo import TagRepo
+from time_slice.repo import TimeSliceRepo
 
 
 class TodaysTotalsTable(QtWidgets.QTableWidget):
 
-    def __init__(self, repo: Repository):
-        self.__repo = repo
+    def __init__(self, time_slice_repo: TimeSliceRepo, tag_repo: TagRepo):
+        self.__time_slice_repo = time_slice_repo
+        self.__tag_repo = tag_repo
 
         super().__init__()
         self.__make_ui()
         self.__update_times()
 
-        self.__repo.time_slice_added += lambda _: self.__update_times()
-        self.__repo.tags_changed += lambda _: self.__update_times()
+        self.__time_slice_repo.time_slice_added += lambda _: self.__update_times()
+        self.__tag_repo.tags_changed += lambda _: self.__update_times()
 
     def __make_ui(self):
         self.horizontalHeader().setVisible(True)
@@ -25,7 +27,7 @@ class TodaysTotalsTable(QtWidgets.QTableWidget):
         self.verticalHeader().setVisible(False)
 
     def __update_times(self):
-        times = self.__repo.get_times_by_tag()
+        times = self.__time_slice_repo.get_times_by_tag()
         self.setRowCount(len(times))
         self.setHorizontalHeaderLabels(["Tag", "Total"])
 

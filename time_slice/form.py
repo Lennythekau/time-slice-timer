@@ -2,7 +2,7 @@ from PySide6 import QtGui
 from PySide6 import QtWidgets
 from PySide6.QtCore import Signal, Slot
 
-from db.repository import Repository
+from tag.repo import TagRepo
 from user_session import UserSession
 
 from .model import RunningTimeSlice
@@ -11,12 +11,16 @@ from .model import RunningTimeSlice
 class NewSliceForm(QtWidgets.QWidget):
     submitted = Signal(RunningTimeSlice)
 
-    def __init__(self, user_session: UserSession, repo: Repository):
+    def __init__(
+        self,
+        user_session: UserSession,
+        tag_repo: TagRepo,
+    ):
 
         super().__init__()
 
         self.__user_session = user_session
-        self.__repo = repo
+        self.__tag_repo = tag_repo
 
         self.__make_ui()
         self.__setup_shortcuts()
@@ -25,7 +29,7 @@ class NewSliceForm(QtWidgets.QWidget):
         self.__user_session.stopwatch.finished += lambda _: self.setEnabled(True)
         self.__user_session.stopwatch.cancelled += lambda _: self.setEnabled(True)
 
-        self.__repo.tags_changed += lambda _: self.__update_tag_input_items()
+        self.__tag_repo.tags_changed += lambda _: self.__update_tag_input_items()
 
     def __make_ui(self):
         self.__layout = QtWidgets.QVBoxLayout(self)
@@ -55,7 +59,7 @@ class NewSliceForm(QtWidgets.QWidget):
 
     def __update_tag_input_items(self):
         self.__tag_input.clear()
-        for tag in self.__repo.get_tags():
+        for tag in self.__tag_repo.get_tags():
             self.__tag_input.addItem(tag.name, tag)
 
     def __setup_focus_shortcuts(self):

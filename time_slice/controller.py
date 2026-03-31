@@ -1,11 +1,11 @@
-from db.repository import Repository
 from user_session import UserSession
 
 from .model import RunningTimeSlice
+from .repo import TimeSliceRepo
 
 
 class TimeSliceController:
-    def __init__(self, user_session: UserSession, repo: Repository):
+    def __init__(self, user_session: UserSession, repo: TimeSliceRepo):
         self.__user_session = user_session
         self.__repo = repo
 

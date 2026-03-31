@@ -31,7 +31,10 @@ def register_adapters():
     sql.register_converter("datetime", __convert_datetime)
 
 
-def create_connection_factory(path: pathlib.Path) -> Callable[[], sql.Connection]:
+type ConnectionFactory = Callable[[], sql.Connection]
+
+
+def create_connection_factory(path: pathlib.Path) -> ConnectionFactory:
     """Creates a function that gives sqlite3 connection to the database at `path`."""
 
     path.parent.mkdir(parents=True, exist_ok=True)
