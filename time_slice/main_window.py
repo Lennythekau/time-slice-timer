@@ -4,19 +4,20 @@ from PySide6.QtCore import Slot
 
 import app_info
 from db.repository import Repository
-from new_slice_form import NewSliceForm
 from stats.todays_totals_table import TodaysTotalsTable
 from stopwatch.controller import StopwatchController
 from stopwatch.widget import StopwatchWidget
-from tag_view_controller import TagViewController
-from tag_view_window import TagViewWindow
-from time_slice import RunningTimeSlice
-from time_slice_controller import TimeSliceController
-from times_up_dialog import TimesUpDialog
+from tag.controller import TagController
+from tag.dialog import TagDialog
 from user_session import UserSession
 
+from .controller import TimeSliceController
+from .form import NewSliceForm
+from .model import RunningTimeSlice
+from .times_up_dialog import TimesUpDialog
 
-class MainWindow(QtWidgets.QMainWindow):
+
+class TimeSliceWindow(QtWidgets.QMainWindow):
 
     def __init__(
         self,
@@ -24,7 +25,7 @@ class MainWindow(QtWidgets.QMainWindow):
         repo: Repository,
         stopwatch_controller: StopwatchController,
         time_slice_controller: TimeSliceController,
-        tag_view_controller: TagViewController,
+        tag_view_controller: TagController,
     ):
         super().__init__()
 
@@ -46,7 +47,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def __make_ui(self):
         self.setWindowTitle(app_info.APP_NAME)
 
-        self.__tag_view_window = TagViewWindow(self.__repo, self.__tag_view_controller)
+        self.__tag_view_window = TagDialog(self.__repo, self.__tag_view_controller)
 
         self.setCentralWidget(QtWidgets.QWidget())
         self.__layout = QtWidgets.QVBoxLayout(self.centralWidget())

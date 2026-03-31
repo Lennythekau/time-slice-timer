@@ -1,12 +1,15 @@
 from typing import Literal
+
 from PySide6 import QtWidgets
 from PySide6.QtCore import Slot
+
 from db.repository import Repository
-from tag_view_controller import TagViewController
+
+from .controller import TagController
 
 
-class TagViewWindow(QtWidgets.QDialog):
-    def __init__(self, repo: Repository, tag_view_controller: TagViewController):
+class TagDialog(QtWidgets.QDialog):
+    def __init__(self, repo: Repository, tag_view_controller: TagController):
         super().__init__()
         self.__repo = repo
         self.__tag_view_controller = tag_view_controller

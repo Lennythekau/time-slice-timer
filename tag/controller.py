@@ -1,8 +1,9 @@
 import sqlite3
+
 from db.repository import Repository
 
 
-class TagViewController:
+class TagController:
 
     def __init__(self, repo: Repository):
         self.__repo = repo

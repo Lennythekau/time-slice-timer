@@ -1,5 +1,7 @@
-from typing import NamedTuple
 from datetime import datetime
+from typing import NamedTuple
+
+from tag.model import Tag
 
 
 class RunningTimeSlice(NamedTuple):
@@ -25,11 +27,3 @@ class TimeSlice(NamedTuple):
 
     def __hash__(self):
         return hash(self.time_slice_id)
-
-
-class Tag(NamedTuple):
-    tag_id: int
-    name: str
-
-    def __hash__(self):
-        return hash(self.tag_id)

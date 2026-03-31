@@ -1,11 +1,13 @@
 from collections.abc import Callable
+
+from PySide6 import QtCore, QtWidgets
 from PySide6.QtGui import QIcon
-from PySide6 import QtWidgets, QtCore
 from PySide6.QtGui import Qt
 
 import rc_icons
-from stopwatch.controller import StopwatchController
-from stopwatch.model import StopwatchModel
+
+from .controller import StopwatchController
+from .model import StopwatchModel
 
 
 class StopwatchWidget(QtWidgets.QWidget):

@@ -1,6 +1,7 @@
 from db.repository import Repository
-from time_slice import RunningTimeSlice
 from user_session import UserSession
+
+from .model import RunningTimeSlice
 
 
 class TimeSliceController:

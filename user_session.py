@@ -1,4 +1,4 @@
-from time_slice import RunningTimeSlice
+from time_slice.model import RunningTimeSlice
 from stopwatch.model import StopwatchModel
 
 

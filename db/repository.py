@@ -3,7 +3,8 @@ import datetime
 from typing import TYPE_CHECKING, cast
 
 from lib.event import Event
-from time_slice import RunningTimeSlice, Tag, TimeSlice
+from time_slice.model import RunningTimeSlice, TimeSlice
+from tag.model import Tag
 
 if TYPE_CHECKING:
     from collections.abc import Callable

@@ -1,5 +1,6 @@
-from stopwatch.model import StopwatchModel
-from time_slice import RunningTimeSlice
+from time_slice.model import RunningTimeSlice
+
+from .model import StopwatchModel
 
 
 class StopwatchController:

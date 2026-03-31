@@ -3,8 +3,9 @@ from PySide6 import QtWidgets
 from PySide6.QtCore import Signal, Slot
 
 from db.repository import Repository
-from time_slice import RunningTimeSlice
 from user_session import UserSession
+
+from .model import RunningTimeSlice
 
 
 class NewSliceForm(QtWidgets.QWidget):

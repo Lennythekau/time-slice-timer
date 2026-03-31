@@ -1,5 +1,4 @@
 from PySide6 import QtWidgets
-from PySide6.QtCore import Slot
 from PySide6.QtGui import Qt
 
 

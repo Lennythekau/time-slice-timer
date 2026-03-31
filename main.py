@@ -5,11 +5,11 @@ from PySide6 import QtWidgets
 import app_info
 from db.repository import Repository
 from db.sqlite_setup import create_connection_factory, register_adapters
-from main_window import MainWindow
+from time_slice.main_window import TimeSliceWindow
 from stopwatch.controller import StopwatchController
 from stopwatch.model import StopwatchModel
-from tag_view_controller import TagViewController
-from time_slice_controller import TimeSliceController
+from tag.controller import TagController
+from time_slice.controller import TimeSliceController
 from user_session import UserSession
 
 
@@ -37,9 +37,9 @@ def main() -> None:
     # Controllers
     stopwatch_controller = StopwatchController(stopwatch_model)
     time_slice_controller = TimeSliceController(user_session, repo)
-    tag_view_controller = TagViewController(repo)
+    tag_view_controller = TagController(repo)
 
-    window = MainWindow(
+    window = TimeSliceWindow(
         user_session,
         repo,
         stopwatch_controller,
