@@ -74,6 +74,7 @@ class TasksViewAdapter(QAbstractItemModel):
             return False
 
         self.__select(parent_index)
+        return True
 
     def __try_move_to_preorder_predecessor(self, current_index: QModelIndex):
         # If current index is invalid => no sibling at all.
