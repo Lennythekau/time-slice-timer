@@ -47,6 +47,12 @@ class TimeSliceWindow(QtWidgets.QMainWindow):
         QtGui.QShortcut(QtGui.QKeySequence("Alt+s"), self).activated.connect(
             self.__toggle_todays_totals_table
         )
+        QtGui.QShortcut(QtGui.QKeySequence("Alt+t"), self).activated.connect(
+            self.__show_tag_dialog
+        )
+        QtGui.QShortcut(QtGui.QKeySequence("Alt+k"), self).activated.connect(
+            self.__show_task_dialog
+        )
 
         self.__user_session.stopwatch.finished += self.__on_stopwatch_finished
         self.__user_session.stopwatch.cancelled += self.__on_stopwatch_cancelled
@@ -87,28 +93,28 @@ class TimeSliceWindow(QtWidgets.QMainWindow):
             QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Minimum
         )
 
+    @Slot()
+    def __show_tag_dialog(self):
+        if self.__tag_dialog is None:
+            self.__tag_dialog = TagDialog(self.__tag_repo, self.__tag_controller)
+        self.__tag_dialog.show()
+
+    @Slot()
+    def __show_task_dialog(self):
+        if self.__tasks_dialog is None:
+            self.__tasks_dialog = TasksDialog(self.__task_repo)
+        self.__tasks_dialog.show()
+
     def __make_toolbar(self):
         self.__toolbar = self.addToolBar("Toolbar!")
         self.__toolbar.setMovable(False)  # moving this toolbar would just be silly.
 
-        @Slot()
-        def show_tag_dialog():
-            if self.__tag_dialog is None:
-                self.__tag_dialog = TagDialog(self.__tag_repo, self.__tag_controller)
-            self.__tag_dialog.show()
-
-        @Slot()
-        def show_task_dialog():
-            if self.__tasks_dialog is None:
-                self.__tasks_dialog = TasksDialog(self.__task_repo)
-            self.__tasks_dialog.show()
-
         tag_action = QtGui.QAction("Tags", self.__toolbar)
-        tag_action.triggered.connect(show_tag_dialog)
+        tag_action.triggered.connect(self.__show_tag_dialog)
         self.__toolbar.addAction(tag_action)
 
         task_action = QtGui.QAction("Tasks", self.__toolbar)
-        task_action.triggered.connect(show_task_dialog)
+        task_action.triggered.connect(self.__show_task_dialog)
         self.__toolbar.addAction(task_action)
 
     def __toggle_todays_totals_table(self):

@@ -20,6 +20,8 @@ This app was made entirely for my own purposes, and doesn't care about user frie
 - `Alt+3`: Focus the duration input
 - `Alt+Enter`: Submit the form to create a new time slice.
 - `Alt+s`: Toggle visibility of the total times for today. I'm planning on moving it to a separate tab.
+- `Alt+k`: Show task menu
+- `Alt+t`: Show tag menu
 
 ### Task view (Inspired by Vim/Blender)
 - `j`: Move down a task.

@@ -340,3 +340,14 @@ class TasksViewAdapter(QAbstractItemModel):
 
         self.dataChanged.emit(index, index)
         return True
+
+    @override
+    def headerData(
+        self,
+        section: int,
+        orientation: Qt.Orientation,
+        role: int = Qt.ItemDataRole.DisplayRole,
+    ) -> Any:
+        if role == Qt.ItemDataRole.DisplayRole:
+            if orientation == Qt.Orientation.Horizontal:
+                return "Tasks"
