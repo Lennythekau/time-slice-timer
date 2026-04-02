@@ -31,25 +31,6 @@ class TimeSliceRepo:
 
         return date
 
-    def ensure_tables_created(self):
-        # PARSE_DECLTYPES so that the types given in the creating table syntax
-        # are enough for the converter/adapter methods to be called.
-        with self.make_connection() as connection:
-            connection.execute(
-                """CREATE TABLE IF NOT EXISTS time_slice(
-                        time_slice_id INTEGER PRIMARY KEY, 
-                        created_at datetime, 
-                        description TEXT, 
-                        tag_id INTEGER, 
-                        duration INTEGER)"""
-            )
-            connection.execute(
-                """CREATE TABLE IF NOT EXISTS tag(
-                        tag_id INTEGER PRIMARY KEY, 
-                        name TEXT UNIQUE NOT NULL)"""
-            )
-        connection.close()
-
     def add_slice(
         self,
         time_slice: RunningTimeSlice,

@@ -1,3 +1,4 @@
+from task.repo import TaskRepo
 from PySide6 import QtGui
 from PySide6 import QtWidgets
 from PySide6.QtCore import Slot
@@ -9,6 +10,7 @@ from stopwatch.widget import StopwatchWidget
 from tag.controller import TagController
 from tag.dialog import TagDialog
 from tag.repo import TagRepo
+from task.dialog import TasksDialog
 from user_session import UserSession
 
 from .controller import TimeSliceController
@@ -25,6 +27,7 @@ class TimeSliceWindow(QtWidgets.QMainWindow):
         user_session: UserSession,
         time_slice_repo: TimeSliceRepo,
         tag_repo: TagRepo,
+        task_repo: TaskRepo,
         stopwatch_controller: StopwatchController,
         time_slice_controller: TimeSliceController,
         tag_view_controller: TagController,
@@ -37,6 +40,7 @@ class TimeSliceWindow(QtWidgets.QMainWindow):
         self.__tag_controller = tag_view_controller
         self.__time_slice_repo = time_slice_repo
         self.__tag_repo = tag_repo
+        self.__task_repo = task_repo
 
         self.__make_ui()
 
@@ -51,6 +55,7 @@ class TimeSliceWindow(QtWidgets.QMainWindow):
         self.setWindowTitle(app_info.APP_NAME)
 
         self.__tag_dialog: TagDialog | None = None
+        self.__tasks_dialog: TasksDialog | None = None
 
         self.setCentralWidget(QtWidgets.QWidget())
         self.__layout = QtWidgets.QVBoxLayout(self.centralWidget())
@@ -94,16 +99,16 @@ class TimeSliceWindow(QtWidgets.QMainWindow):
 
         @Slot()
         def show_task_dialog():
-            if self.__tag_dialog is None:
-                self.__tag_dialog = TagDialog(self.__tag_repo, self.__tag_controller)
-            self.__tag_dialog.show()
+            if self.__tasks_dialog is None:
+                self.__tasks_dialog = TasksDialog(self.__task_repo)
+            self.__tasks_dialog.show()
 
-        tags_action = QtGui.QAction("Tags", self.__toolbar)
-        tags_action.triggered.connect(show_tag_dialog)
-        self.__toolbar.addAction(tags_action)
+        tag_action = QtGui.QAction("Tags", self.__toolbar)
+        tag_action.triggered.connect(show_tag_dialog)
+        self.__toolbar.addAction(tag_action)
 
         task_action = QtGui.QAction("Tasks", self.__toolbar)
-        tags_action.triggered.connect(show_task_dialog)
+        task_action.triggered.connect(show_task_dialog)
         self.__toolbar.addAction(task_action)
 
     def __toggle_todays_totals_table(self):

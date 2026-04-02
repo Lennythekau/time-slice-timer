@@ -40,6 +40,34 @@ def create_connection_factory(path: pathlib.Path) -> ConnectionFactory:
     path.parent.mkdir(parents=True, exist_ok=True)
 
     def make_connection():
-        return sql.connect(path, detect_types=sql.PARSE_DECLTYPES)
+        connection = sql.connect(path, detect_types=sql.PARSE_DECLTYPES)
+        connection.execute("PRAGMA foreign_keys = ON")
+        return connection
 
     return make_connection
+
+
+def ensure_tables_created(make_connection: ConnectionFactory):
+    with make_connection() as connection:
+        connection.execute(
+            """CREATE TABLE IF NOT EXISTS time_slice (
+                    time_slice_id INTEGER PRIMARY KEY, 
+                    created_at datetime, 
+                    description TEXT, 
+                    tag_id INTEGER, 
+                    duration INTEGER)"""
+        )
+        connection.execute(
+            """CREATE TABLE IF NOT EXISTS tag (
+                    tag_id INTEGER PRIMARY KEY, 
+                    name TEXT UNIQUE NOT NULL)"""
+        )
+
+        connection.execute(
+            """CREATE TABLE IF NOT EXISTS task (
+                    task_id INTEGER PRIMARY KEY, 
+                    parent_id INTEGER NULL REFERENCES task(task_id) ON DELETE CASCADE, 
+                    description TEXT NOT NULL, 
+                    tag_id INTEGER NULL)"""
+        )
+    connection.close()

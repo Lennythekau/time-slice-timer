@@ -3,11 +3,16 @@ import sys
 from PySide6 import QtWidgets
 
 import app_info
-from sqlite_setup import create_connection_factory, register_adapters
+from sqlite_setup import (
+    create_connection_factory,
+    ensure_tables_created,
+    register_adapters,
+)
 from stopwatch.controller import StopwatchController
 from stopwatch.model import StopwatchModel
 from tag.controller import TagController
 from tag.repo import TagRepo
+from task.repo import TaskRepo
 from time_slice.controller import TimeSliceController
 from time_slice.main_window import TimeSliceWindow
 from time_slice.repo import TimeSliceRepo
@@ -18,12 +23,13 @@ def make_repos():
     make_connection = create_connection_factory(
         app_info.APP_ROOT / "data" / "time_slice.db"
     )
+
+    ensure_tables_created(make_connection)
     time_slice_repo = TimeSliceRepo(make_connection)
-    time_slice_repo.ensure_tables_created()
-
     tag_repo = TagRepo(make_connection)
+    task_repo = TaskRepo(make_connection)
 
-    return time_slice_repo, tag_repo
+    return time_slice_repo, tag_repo, task_repo
 
 
 def main() -> None:
@@ -36,7 +42,7 @@ def main() -> None:
 
     # Data
     register_adapters()
-    time_slice_repo, tag_repo = make_repos()
+    time_slice_repo, tag_repo, task_repo = make_repos()
 
     # Controllers
     stopwatch_controller = StopwatchController(stopwatch_model)
@@ -47,6 +53,7 @@ def main() -> None:
         user_session,
         time_slice_repo,
         tag_repo,
+        task_repo,
         stopwatch_controller,
         time_slice_controller,
         tag_view_controller,
