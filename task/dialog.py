@@ -1,6 +1,6 @@
 from PySide6 import QtWidgets
 
-from .adapter import TaskViewAdapter
+from .adapter import TaskAdapter
 from .repo import TaskRepo
 from .view import TasksView
 
@@ -14,7 +14,7 @@ class TaskDialog(QtWidgets.QDialog):
     def __make_ui(self):
         self.__layout = QtWidgets.QVBoxLayout(self)
 
-        adapter = TaskViewAdapter(self.__task_repo)
+        adapter = TaskAdapter(self.__task_repo)
         self.__task_view = TasksView(adapter)
         adapter.set_selection_model(self.__task_view.selectionModel())
 

@@ -4,11 +4,11 @@ from PySide6.QtGui import QShortcut
 from PySide6.QtGui import QKeySequence
 from PySide6.QtWidgets import QTreeView
 
-from task.adapter import TaskViewAdapter
+from task.adapter import TaskAdapter
 
 
 class TasksView(QTreeView):
-    def __init__(self, adapter: TaskViewAdapter):
+    def __init__(self, adapter: TaskAdapter):
         super().__init__()
         self.setAlternatingRowColors(True)
 

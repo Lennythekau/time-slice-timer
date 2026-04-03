@@ -1,3 +1,4 @@
+from task.adapter import TaskAdapter
 from task.repo import TaskRepo
 from PySide6 import QtGui
 from PySide6 import QtWidgets
@@ -68,7 +69,10 @@ class TimeSliceWindow(QtWidgets.QMainWindow):
         self.__layout.setContentsMargins(5, 5, 5, 5)
         self.__layout.setSpacing(0)
 
-        self.__new_slice_form = NewSliceForm(self.__user_session, self.__tag_repo)
+        self.__task_adapter = TaskAdapter(self.__task_repo)
+        self.__new_slice_form = NewSliceForm(
+            self.__user_session, self.__tag_repo, self.__task_adapter
+        )
         self.__new_slice_form.submitted.connect(self.__on_new_slice_form_submitted)
 
         self.__stopwatch_widget = StopwatchWidget(

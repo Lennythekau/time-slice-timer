@@ -1,8 +1,11 @@
+from PySide6.QtCore import QSortFilterProxyModel
 from PySide6 import QtGui
 from PySide6 import QtWidgets
 from PySide6.QtCore import Signal, Slot
 
 from tag.repo import TagRepo
+from task.adapter import TaskAdapter
+from task.flattened_adapter import FlattenedTaskAdapter
 from user_session import UserSession
 
 from .model import RunningTimeSlice
@@ -15,12 +18,14 @@ class NewSliceForm(QtWidgets.QWidget):
         self,
         user_session: UserSession,
         tag_repo: TagRepo,
+        task_adapter: TaskAdapter,
     ):
 
         super().__init__()
 
         self.__user_session = user_session
         self.__tag_repo = tag_repo
+        self.__task_adapter = FlattenedTaskAdapter(task_adapter)
 
         self.__make_ui()
         self.__setup_shortcuts()
@@ -42,6 +47,17 @@ class NewSliceForm(QtWidgets.QWidget):
         self.__description_input = QtWidgets.QLineEdit(
             placeholderText="Task description"
         )
+
+        completer = QtWidgets.QCompleter()
+        completer.setModel(self.__task_adapter)
+        completer.setCaseSensitivity(QtGui.Qt.CaseSensitivity.CaseInsensitive)
+        completer.setCompletionRole(QtGui.Qt.ItemDataRole.DisplayRole)
+        completer.setCompletionMode(QtWidgets.QCompleter.CompletionMode.PopupCompletion)
+        completer.setCompletionColumn(0)
+        completer.setFilterMode(QtGui.Qt.MatchFlag.MatchContains)
+
+        self.__description_input.setCompleter(completer)
+
         self.__tag_input = QtWidgets.QComboBox()
         self.__update_tag_input_items()
 
