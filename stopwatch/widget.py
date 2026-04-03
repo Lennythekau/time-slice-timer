@@ -20,7 +20,7 @@ class StopwatchWidget(QtWidgets.QWidget):
         super().__init__()
 
         self.__make_ui()
-        self.__poll_timer = QtCore.QTimer(timerType=Qt.TimerType.VeryCoarseTimer)
+        self.__poll_timer = QtCore.QTimer(timerType=Qt.TimerType.CoarseTimer)
         self.__poll_timer_connection: QtCore.QMetaObject.Connection | None = None
 
         self.__stopwatch_controller = stopwatch_controller
