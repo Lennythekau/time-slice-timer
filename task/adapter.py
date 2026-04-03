@@ -9,6 +9,8 @@ from PySide6.QtCore import (
     Signal,
 )
 
+from tag.model import Tag
+
 from .model import Task
 from .repo import TaskRepo
 
@@ -16,8 +18,8 @@ type Index = QModelIndex | QPersistentModelIndex
 
 
 class TaskAdapter(QAbstractItemModel):
-    created_task = Signal(QModelIndex)
-    inserted_task = Signal(QModelIndex)
+    task_created = Signal(QModelIndex)
+    task_inserted = Signal(QModelIndex)
 
     def __init__(
         self,
@@ -195,7 +197,7 @@ class TaskAdapter(QAbstractItemModel):
         new_row = preceding_index.row() + 1
         self.insertRow(new_row, preceding_index.parent())
         new_index = self.index(new_row, 0, preceding_index.parent())
-        self.created_task.emit(new_index)
+        self.task_created.emit(new_index)
 
     def insert_subtask(self):
         indices = self.__selection_model.selectedIndexes()
@@ -209,7 +211,7 @@ class TaskAdapter(QAbstractItemModel):
         new_row = self.rowCount(parent_index)
         self.insertRow(new_row, parent_index)
         new_index = self.index(new_row, 0, parent_index)
-        self.inserted_task.emit(new_index)
+        self.task_inserted.emit(new_index)
 
     def delete_task(self):
         indices = self.__selection_model.selectedIndexes()
@@ -219,6 +221,20 @@ class TaskAdapter(QAbstractItemModel):
 
         index = indices[0]
         self.removeRow(index.row(), index.parent())
+
+    def shift_focus(self):
+        indices = self.__selection_model.selectedIndexes()
+        if not indices:
+            return
+
+        index = indices[0]
+        column_count = self.columnCount(index.parent())
+
+        if column_count != 2:
+            return
+
+        new_column = (index.column() + 1) % column_count
+        self.__select(self.index(index.row(), new_column, index.parent()))
 
     @override
     def insertRows(self, row: int, count: int, parent: Index = QModelIndex()) -> bool:
@@ -264,7 +280,6 @@ class TaskAdapter(QAbstractItemModel):
 
     @override
     def parent(self, index: QModelIndex):  # type: ignore[override]
-
         if not index.isValid():
             return QModelIndex()
 
@@ -308,7 +323,9 @@ class TaskAdapter(QAbstractItemModel):
 
     @override
     def columnCount(self, parent: Index = QModelIndex()) -> int:
-        return 1
+        if parent.isValid():
+            return 1
+        return 2
 
     @override
     def rowCount(self, parent: Index = QModelIndex()) -> int:
@@ -325,8 +342,12 @@ class TaskAdapter(QAbstractItemModel):
             return None
 
         if role in (Qt.ItemDataRole.DisplayRole, Qt.ItemDataRole.EditRole):
-            task: Task = index.internalPointer()
-            return task.description
+            if index.column() == 0:
+                task: Task = index.internalPointer()
+                return task.description
+            if index.column() == 1:
+                task: Task = index.internalPointer()
+                return task.tag.name
 
     @override
     def setData(
@@ -335,9 +356,16 @@ class TaskAdapter(QAbstractItemModel):
         if role != Qt.ItemDataRole.EditRole or not index.isValid():
             return False
 
-        task: Task = index.internalPointer()
-        task.description = value
-        task = self.__task_repo.write(task)
+        if index.column() == 0:
+            task: Task = index.internalPointer()
+            task.description = value
+            task = self.__task_repo.write(task)
+        elif index.column() == 1:
+            task: Task = index.internalPointer()
+            task.tag = value
+            task = self.__task_repo.write(task)
+        else:
+            assert False
 
         self.dataChanged.emit(index, index)
         return True
@@ -349,6 +377,12 @@ class TaskAdapter(QAbstractItemModel):
         orientation: Qt.Orientation,
         role: int = Qt.ItemDataRole.DisplayRole,
     ) -> Any:
-        if role == Qt.ItemDataRole.DisplayRole:
-            if orientation == Qt.Orientation.Horizontal:
-                return "Tasks"
+        if role != Qt.ItemDataRole.DisplayRole:
+            return
+        if orientation != Qt.Orientation.Horizontal:
+            return
+
+        if section == 0:
+            return "Task"
+        if section == 1:
+            return "Tag"

@@ -4,25 +4,31 @@ from PySide6.QtGui import QShortcut
 from PySide6.QtGui import QKeySequence
 from PySide6.QtWidgets import QTreeView
 
+from tag.delegate import TagDelegate
+from tag.repo import TagRepo
 from task.adapter import TaskAdapter
 
 
 class TasksView(QTreeView):
-    def __init__(self, adapter: TaskAdapter):
+    def __init__(self, adapter: TaskAdapter, tag_repo: TagRepo):
         super().__init__()
         self.setAlternatingRowColors(True)
 
         self.setModel(adapter)
         self.adapter = adapter
 
-        self.adapter.created_task.connect(self.__task_created)
-        self.adapter.inserted_task.connect(self.__task_inserted)
+        self.adapter.task_created.connect(self.__task_created)
+        self.adapter.task_inserted.connect(self.__task_inserted)
+
+        self.setItemDelegateForColumn(1, TagDelegate(tag_repo))
 
         # Movement
         self.__add_shortcut("j", adapter.move_down)
         self.__add_shortcut("k", adapter.move_up)
         self.__add_shortcut("h", adapter.move_previous_process)
         self.__add_shortcut("l", adapter.move_next_process)
+
+        self.__add_shortcut("w", adapter.shift_focus)
 
         self.__add_shortcut("Space", self.__toggle_expandedness)
 

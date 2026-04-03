@@ -1,8 +1,8 @@
-from typing import cast
 from dataclasses import dataclass
 
+from lib.event import Event
 from sqlite_setup import ConnectionFactory
-from tag.model import Tag
+from tag.model import EMPTY_TAG, Tag
 
 from .model import Task
 
@@ -11,20 +11,8 @@ from .model import Task
 class TaskRepo:
     make_connection: ConnectionFactory
 
-    def add_task(self, description: str, tag: Tag | None, parent: Task | None):
-        parent_id = None if parent is None else parent.task_id
-        tag_id = None if tag is None else tag.tag_id
-
-        with self.make_connection() as connection:
-            cursor = connection.execute(
-                """INSERT INTO task (parent_id, description_tag_id, tag_id)
-                    VALUES (?, ?, ?)""",
-                (parent_id, description, tag_id),
-            )
-        connection.close()
-
-        task_id = cast(int, cursor.lastrowid)
-        return Task(task_id, parent, description, tag)
+    def __post_init__(self):
+        self.tasks_changed = Event[None]()
 
     def delete_task(self, task_id: int):
         """These ids should form a subtree for correctness."""
@@ -32,6 +20,7 @@ class TaskRepo:
         with self.make_connection() as connection:
             connection.execute("DELETE FROM task WHERE task_id=?", (task_id,))
         connection.close()
+        self.tasks_changed.invoke(None)
 
     def __get_rows(self):
         with self.make_connection() as connection:
@@ -51,13 +40,10 @@ class TaskRepo:
 
         for row in rows:
             task_id, parent_id, description, tag_id, tag_name = row
-
-            if tag_id is not None:
-                assert tag_name is not None
-                tag = Tag(tag_id, tag_name)
+            if tag_id is None:
+                tag = EMPTY_TAG
             else:
-                tag = None
-
+                tag = Tag(tag_id, tag_name)
             tasks_by_id[task_id] = Task(task_id, None, description, tag)
 
         # Now that we've made each task object (but without children),
@@ -88,17 +74,19 @@ class TaskRepo:
             # Write
             if task.task_id == task.UNSET_ID:
                 cursor = connection.execute(
-                    "INSERT INTO task (description, parent_id) VALUES (?, ?)",
-                    (task.description, parent_id),
+                    "INSERT INTO task (description, parent_id, tag_id) VALUES (?, ?, ?)",
+                    (task.description, parent_id, task.tag.tag_id),
                 )
                 assert cursor.lastrowid is not None
                 task.task_id = cursor.lastrowid
             # Update
             else:
                 connection.execute(
-                    "UPDATE task SET description=?, parent_id=?",
-                    (task.description, parent_id),
+                    "UPDATE task SET description=?, parent_id=?, tag_id=? WHERE task_id=?",
+                    (task.description, parent_id, task.tag.tag_id, task.task_id),
                 )
 
         connection.close()
+        self.tasks_changed.invoke(None)
+
         return task

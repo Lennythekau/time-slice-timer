@@ -4,7 +4,7 @@ from typing import cast
 from lib.event import Event
 from sqlite_setup import ConnectionFactory
 
-from .model import Tag
+from .model import EMPTY_TAG, Tag
 
 
 @dataclass
@@ -46,4 +46,4 @@ class TagRepo:
         with self.make_connection() as connection:
             tag_rows = connection.execute("SELECT tag_id, name FROM tag").fetchall()
         connection.close()
-        return [Tag(*row) for row in tag_rows]
+        return [EMPTY_TAG] + [Tag(*row) for row in tag_rows]

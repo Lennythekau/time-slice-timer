@@ -32,16 +32,18 @@ class TimeSliceWindow(QtWidgets.QMainWindow):
         stopwatch_controller: StopwatchController,
         time_slice_controller: TimeSliceController,
         tag_view_controller: TagController,
+        task_adapter: TaskAdapter,
     ):
         super().__init__()
 
         self.__user_session = user_session
-        self.__stopwatch_controller = stopwatch_controller
-        self.__time_slice_controller = time_slice_controller
-        self.__tag_controller = tag_view_controller
         self.__time_slice_repo = time_slice_repo
         self.__tag_repo = tag_repo
         self.__task_repo = task_repo
+        self.__stopwatch_controller = stopwatch_controller
+        self.__time_slice_controller = time_slice_controller
+        self.__tag_controller = tag_view_controller
+        self.__task_adapter = task_adapter
 
         self.__make_ui()
 
@@ -69,9 +71,8 @@ class TimeSliceWindow(QtWidgets.QMainWindow):
         self.__layout.setContentsMargins(5, 5, 5, 5)
         self.__layout.setSpacing(0)
 
-        self.__task_adapter = TaskAdapter(self.__task_repo)
         self.__new_slice_form = NewSliceForm(
-            self.__user_session, self.__tag_repo, self.__task_adapter
+            self.__user_session, self.__tag_repo, self.__task_repo, self.__task_adapter
         )
         self.__new_slice_form.submitted.connect(self.__on_new_slice_form_submitted)
 
@@ -106,7 +107,7 @@ class TimeSliceWindow(QtWidgets.QMainWindow):
     @Slot()
     def __show_task_dialog(self):
         if self.__task_dialog is None:
-            self.__task_dialog = TaskDialog(self, self.__task_repo)
+            self.__task_dialog = TaskDialog(self, self.__tag_repo, self.__task_adapter)
         self.__task_dialog.open()
 
     def __make_toolbar(self):

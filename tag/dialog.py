@@ -3,6 +3,8 @@ from typing import Literal
 from PySide6 import QtWidgets
 from PySide6.QtCore import Slot
 
+from tag.model import EMPTY_TAG
+
 from .controller import TagController
 from .repo import TagRepo
 
@@ -75,7 +77,13 @@ class TagDialog(QtWidgets.QDialog):
             selected_item.setSelected(False)
 
         # Select last item
-        self.__start_edit_mode(selected_items[-1])
+        selected_item = selected_items[-1]
+        if selected_item.text() == EMPTY_TAG.name:
+            self.__form_button.setEnabled(False)
+        else:
+            self.__form_button.setEnabled(True)
+
+        self.__start_edit_mode(selected_item)
 
     @Slot()
     def __on_delete_button_clicked(self):

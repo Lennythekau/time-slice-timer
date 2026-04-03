@@ -1,11 +1,19 @@
-from PySide6.QtCore import QSortFilterProxyModel
+from typing import cast
 from PySide6 import QtGui
 from PySide6 import QtWidgets
-from PySide6.QtCore import Signal, Slot
+from PySide6.QtCore import (
+    QAbstractProxyModel,
+    QModelIndex,
+    QStringListModel,
+    Signal,
+    Slot,
+)
 
+from tag.dropdown import TagDropDown
 from tag.repo import TagRepo
 from task.adapter import TaskAdapter
 from task.flattened_adapter import FlattenedTaskAdapter
+from task.repo import TaskRepo
 from user_session import UserSession
 
 from .model import RunningTimeSlice
@@ -18,25 +26,23 @@ class NewSliceForm(QtWidgets.QWidget):
         self,
         user_session: UserSession,
         tag_repo: TagRepo,
+        task_repo: TaskRepo,
         task_adapter: TaskAdapter,
     ):
 
         super().__init__()
 
         self.__user_session = user_session
-        self.__tag_repo = tag_repo
-        self.__task_adapter = FlattenedTaskAdapter(task_adapter)
+        self.__task_adapter = FlattenedTaskAdapter(task_repo, task_adapter)
 
-        self.__make_ui()
+        self.__make_ui(tag_repo)
         self.__setup_shortcuts()
 
         self.__user_session.stopwatch.started += lambda _: self.setEnabled(False)
         self.__user_session.stopwatch.finished += lambda _: self.setEnabled(True)
         self.__user_session.stopwatch.cancelled += lambda _: self.setEnabled(True)
 
-        self.__tag_repo.tags_changed += lambda _: self.__update_tag_input_items()
-
-    def __make_ui(self):
+    def __make_ui(self, tag_repo: TagRepo):
         self.__layout = QtWidgets.QVBoxLayout(self)
         self.__layout.setSpacing(0)
 
@@ -48,18 +54,21 @@ class NewSliceForm(QtWidgets.QWidget):
             placeholderText="Task description"
         )
 
-        completer = QtWidgets.QCompleter()
-        completer.setModel(self.__task_adapter)
-        completer.setCaseSensitivity(QtGui.Qt.CaseSensitivity.CaseInsensitive)
-        completer.setCompletionRole(QtGui.Qt.ItemDataRole.DisplayRole)
-        completer.setCompletionMode(QtWidgets.QCompleter.CompletionMode.PopupCompletion)
-        completer.setCompletionColumn(0)
-        completer.setFilterMode(QtGui.Qt.MatchFlag.MatchContains)
+        self.__completer = QtWidgets.QCompleter()
+        self.__completer.setModel(self.__task_adapter)
+        self.__completer.setCaseSensitivity(QtGui.Qt.CaseSensitivity.CaseInsensitive)
+        self.__completer.setCompletionRole(QtGui.Qt.ItemDataRole.DisplayRole)
+        self.__completer.setCompletionMode(
+            QtWidgets.QCompleter.CompletionMode.PopupCompletion
+        )
+        self.__completer.setCompletionColumn(0)
+        self.__completer.setFilterMode(QtGui.Qt.MatchFlag.MatchContains)
 
-        self.__description_input.setCompleter(completer)
+        self.__completer.activated[QModelIndex].connect(self.__completion_chosen)  # type: ignore
 
-        self.__tag_input = QtWidgets.QComboBox()
-        self.__update_tag_input_items()
+        self.__description_input.setCompleter(self.__completer)
+
+        self.__tag_input = TagDropDown(tag_repo)
 
         self.__duration_input = QtWidgets.QSpinBox(
             suffix=" min", value=5, singleStep=5, minimum=1, maximum=60
@@ -73,10 +82,12 @@ class NewSliceForm(QtWidgets.QWidget):
         self.__layout.addWidget(self.__duration_input)
         self.__layout.addWidget(self.__submit_button)
 
-    def __update_tag_input_items(self):
-        self.__tag_input.clear()
-        for tag in self.__tag_repo.get_tags():
-            self.__tag_input.addItem(tag.name, tag)
+    @Slot()
+    def __completion_chosen(self, index: QModelIndex):
+        completion_model = cast(QAbstractProxyModel, self.__completer.completionModel())
+        adapter_index = completion_model.mapToSource(index)
+        tag_name = self.__task_adapter.get_tag_name(adapter_index)
+        self.__tag_input.setCurrentText(tag_name)
 
     def __setup_focus_shortcuts(self):
         form_widgets = (

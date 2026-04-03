@@ -12,6 +12,7 @@ from stopwatch.controller import StopwatchController
 from stopwatch.model import StopwatchModel
 from tag.controller import TagController
 from tag.repo import TagRepo
+from task.adapter import TaskAdapter
 from task.repo import TaskRepo
 from time_slice.controller import TimeSliceController
 from time_slice.main_window import TimeSliceWindow
@@ -48,6 +49,7 @@ def main() -> None:
     stopwatch_controller = StopwatchController(stopwatch_model)
     time_slice_controller = TimeSliceController(user_session, time_slice_repo)
     tag_view_controller = TagController(tag_repo)
+    task_adapter = TaskAdapter(task_repo)
 
     window = TimeSliceWindow(
         user_session,
@@ -57,6 +59,7 @@ def main() -> None:
         stopwatch_controller,
         time_slice_controller,
         tag_view_controller,
+        task_adapter,
     )
     window.show()
 

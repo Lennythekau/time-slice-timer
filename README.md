@@ -28,6 +28,7 @@ This app was made entirely for my own purposes, and doesn't care about user frie
 - `k`: Move up a task.
 - `h`: Move to previous process (if currently on a process), or move to the process of the currently selected subtask.
 - `l`: Move to next process. 
+- `w`: Toggle between selecting the description, and the tag (if available).
 
 - `Space`: toggle the expandedness of current task.
 
@@ -39,8 +40,7 @@ This app was made entirely for my own purposes, and doesn't care about user frie
 # Planned features:
 - Move the total times to a separate tab
 - Separate window/tab for statistics
-- Select a (sub)task to automatically load it into the form
-- Search/filter on this list
+- Change search bar to fuzzy search.
 
 # Setup
 
