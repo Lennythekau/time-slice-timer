@@ -8,8 +8,13 @@ from .repo import TagRepo
 
 
 class TagDialog(QtWidgets.QDialog):
-    def __init__(self, tag_repo: TagRepo, tag_view_controller: TagController):
-        super().__init__()
+    def __init__(
+        self,
+        parent: QtWidgets.QMainWindow,
+        tag_repo: TagRepo,
+        tag_view_controller: TagController,
+    ):
+        super().__init__(parent=parent)
         self.__tag_repo = tag_repo
         self.__tag_view_controller = tag_view_controller
         self.__mode: Literal["Add"] | Literal["Edit"] = "Add"
@@ -54,7 +59,6 @@ class TagDialog(QtWidgets.QDialog):
         self.__layout.addWidget(self.__tags_list)
         self.__layout.addWidget(self.__error_message)
         self.__layout.addWidget(self.__form)
-        self.resize(600, 600)
 
     @Slot()
     def __selection_changed(self):

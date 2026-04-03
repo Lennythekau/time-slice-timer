@@ -15,7 +15,7 @@ from .repo import TaskRepo
 type Index = QModelIndex | QPersistentModelIndex
 
 
-class TasksViewAdapter(QAbstractItemModel):
+class TaskViewAdapter(QAbstractItemModel):
     created_task = Signal(QModelIndex)
     inserted_task = Signal(QModelIndex)
 
