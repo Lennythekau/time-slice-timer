@@ -101,13 +101,13 @@ class TimeSliceWindow(QtWidgets.QMainWindow):
     @Slot()
     def __show_tag_dialog(self):
         if self.__tag_dialog is None:
-            self.__tag_dialog = TagDialog(self, self.__tag_repo, self.__tag_controller)
+            self.__tag_dialog = TagDialog(self.__tag_repo, self.__tag_controller)
         self.__tag_dialog.open()
 
     @Slot()
     def __show_task_dialog(self):
         if self.__task_dialog is None:
-            self.__task_dialog = TaskDialog(self, self.__tag_repo, self.__task_adapter)
+            self.__task_dialog = TaskDialog(self.__tag_repo, self.__task_adapter)
         self.__task_dialog.open()
 
     def __make_toolbar(self):

@@ -12,11 +12,10 @@ from .repo import TagRepo
 class TagDialog(QtWidgets.QDialog):
     def __init__(
         self,
-        parent: QtWidgets.QMainWindow,
         tag_repo: TagRepo,
         tag_view_controller: TagController,
     ):
-        super().__init__(parent=parent)
+        super().__init__()
         self.__tag_repo = tag_repo
         self.__tag_view_controller = tag_view_controller
         self.__mode: Literal["Add"] | Literal["Edit"] = "Add"

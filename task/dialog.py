@@ -10,11 +10,10 @@ from .view import TasksView
 class TaskDialog(QtWidgets.QDialog):
     def __init__(
         self,
-        parent: QtWidgets.QMainWindow,
         tag_repo: TagRepo,
         task_adapter: TaskAdapter,
     ):
-        super().__init__(parent=parent)
+        super().__init__()
 
         self.__layout = QtWidgets.QVBoxLayout(self)
 
