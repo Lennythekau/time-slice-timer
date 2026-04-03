@@ -1,3 +1,4 @@
+from PySide6 import QtCore
 from PySide6.QtCore import QAbstractItemModel
 from typing import cast, override
 
@@ -24,7 +25,10 @@ class TagDelegate(QStyledItemDelegate):
         index: QModelIndex | QPersistentModelIndex,
         /,
     ) -> QtWidgets.QWidget:
-        return TagDropDown(self.__tag_repo, parent)
+        drop_down = TagDropDown(self.__tag_repo, parent)
+        QtCore.QTimer.singleShot(0, drop_down.showPopup)
+
+        return drop_down
 
     @override
     def setEditorData(
@@ -44,3 +48,12 @@ class TagDelegate(QStyledItemDelegate):
     ) -> None:
         editor = cast(TagDropDown, editor)
         model.setData(index, editor.currentData(), Qt.ItemDataRole.EditRole)
+
+    @override
+    def updateEditorGeometry(
+        self,
+        editor: QtWidgets.QWidget,
+        option: QtWidgets.QStyleOptionViewItem,
+        index: QModelIndex | QPersistentModelIndex,
+    ):
+        editor.setGeometry(option.rect)  # type: ignore
