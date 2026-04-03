@@ -1,7 +1,11 @@
+from PySide6 import QtGui
+from typing import override
 from typing import Callable
+
 from PySide6.QtCore import QModelIndex
 from PySide6.QtGui import QShortcut
 from PySide6.QtGui import QKeySequence
+from PySide6.QtWidgets import QHeaderView
 from PySide6.QtWidgets import QTreeView
 
 from tag.delegate import TagDelegate
@@ -13,7 +17,6 @@ class TasksView(QTreeView):
     def __init__(self, adapter: TaskAdapter, tag_repo: TagRepo):
         super().__init__()
         self.setAlternatingRowColors(True)
-
         self.setModel(adapter)
         self.adapter = adapter
 
@@ -38,6 +41,13 @@ class TasksView(QTreeView):
         self.__add_shortcut("r", self.__start_edit)
 
         self.__add_shortcut("x", adapter.delete_task)
+
+    @override
+    def resizeEvent(self, event: QtGui.QResizeEvent, /) -> None:
+        first_column_width = int(self.width() * 0.8)
+        self.setColumnWidth(0, first_column_width)
+        self.setColumnWidth(1, self.width() - first_column_width - 2)
+        return super().resizeEvent(event)
 
     def __add_shortcut(self, sequence: str, callback: Callable[[], None]):
         key_sequence = QKeySequence(sequence)

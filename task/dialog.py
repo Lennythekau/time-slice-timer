@@ -22,3 +22,4 @@ class TaskDialog(QtWidgets.QDialog):
         task_adapter.set_selection_model(self.__task_view.selectionModel())
 
         self.__layout.addWidget(self.__task_view)
+        self.resize(650, 400)
