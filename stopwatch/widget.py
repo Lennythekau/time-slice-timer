@@ -80,6 +80,10 @@ class StopwatchWidget(QtWidgets.QWidget):
         self.__poll_timer.start(self.__TIMEOUT_INTERVAL)
         self.__stopwatch_controller.resume()
 
+        # We came here from clicking the resume button.
+        # Most likely the user wants to pause next if interacting with this
+        self.__pause_button.setFocus()
+
     @QtCore.Slot()
     def __pause(self):
         self.__play_button.setEnabled(True)
@@ -93,6 +97,10 @@ class StopwatchWidget(QtWidgets.QWidget):
         self.__poll_timer_connection = None
 
         self.__stopwatch_controller.pause()
+
+        # We came here from clicking the pause button.
+        # Most likely the user wants to resume next if interacting with this
+        self.__play_button.setFocus()
 
     @QtCore.Slot()
     def __cancel(self, _):
