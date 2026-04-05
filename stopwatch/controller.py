@@ -13,11 +13,11 @@ class StopwatchController:
         seconds = slice.duration * 60
         self.__stopwatch.start(seconds)
 
-    def pause(self):
-        self.__stopwatch.pause()
-
-    def resume(self):
-        self.__stopwatch.resume()
+    def toggle(self):
+        if self.__stopwatch.is_paused:
+            self.__stopwatch.resume()
+        else:
+            self.__stopwatch.pause()
 
     def cancel(self):
         self.__stopwatch.cancel()

@@ -10,10 +10,13 @@ class StopwatchModel:
         """
         Creates a new `TimerModel`.
         """
-        self.__is_paused = True
-        self.__is_finished = False
+        self.is_paused = True
+        self.is_finished = False
 
         self.started = Event[int]()
+        self.paused = Event[None]()
+        self.resumed = Event[None]()
+
         self.finished = Event[None]()
         self.cancelled = Event[None]()
 
@@ -22,8 +25,8 @@ class StopwatchModel:
         :param time_limit: Time limit in seconds
         """
         self.__remaining_time: float = time_limit
-        self.__is_paused = True
-        self.__is_finished = False
+        self.is_paused = True
+        self.is_finished = False
         self.__previous_start_time: float = StopwatchModel.UNSET
 
     def start(self, time_limit: int):
@@ -36,20 +39,24 @@ class StopwatchModel:
         self.started.invoke(time_limit)
 
     def pause(self):
-        self.__is_paused = True
+        self.is_paused = True
         time_spent = time.time() - self.__previous_start_time
         self.__remaining_time -= time_spent
 
+        self.paused.invoke(None)
+
     def resume(self):
-        self.__is_paused = False
+        self.is_paused = False
         self.__previous_start_time = time.time()
+
+        self.resumed.invoke(None)
 
     def cancel(self):
         self.reset()
         self.cancelled.invoke(None)
 
     def __get_remaining_time(self) -> float:
-        if self.__is_paused:
+        if self.is_paused:
             return self.__remaining_time
 
         time_spent = time.time() - self.__previous_start_time
@@ -60,12 +67,12 @@ class StopwatchModel:
 
         time_left = self.__get_remaining_time()
 
-        if self.__is_finished:
+        if self.is_finished:
             return 0
 
         if time_left <= 0:
-            self.__is_paused = True
-            self.__is_finished = True
+            self.is_paused = True
+            self.is_finished = True
             self.finished.invoke(None)
 
         return time_left

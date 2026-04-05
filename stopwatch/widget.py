@@ -25,8 +25,12 @@ class StopwatchWidget(QtWidgets.QWidget):
 
         self.__stopwatch_controller = stopwatch_controller
         self.__model = stopwatch_model
-        self.__model.started += self.__on_timer_start
-        self.__model.finished += self.__on_timer_finish
+
+        self.__model.started += self.__on_start
+        self.__model.paused += self.__on_pause
+        self.__model.resumed += self.__on_resume
+        self.__model.cancelled += self.__on_cancel
+        self.__model.finished += self.__on_finish
 
     def __make_ui(self):
         self.__layout = QtWidgets.QVBoxLayout(self)
@@ -38,15 +42,24 @@ class StopwatchWidget(QtWidgets.QWidget):
         self.__controls_box_layout = QtWidgets.QHBoxLayout(self.__controls_box)
         # self.__controls_box_layout.setContentsMargins(0, 0, 0, 0)
 
-        self.__play_button = self.__control_button("play", self.__resume)
-        self.__pause_button = self.__control_button("pause", self.__pause)
-        self.__cancel_button = self.__control_button("end", self.__cancel)
+        self.__play_icon = self.__create_control_icon("play")
+        self.__pause_icon = self.__create_control_icon("pause")
+        self.__cancel_icon = self.__create_control_icon("end")
+
+        self.__play_pause_button = self.__control_button(
+            self.__play_icon, self.__play_pause_button_clicked
+        )
+        self.__cancel_button = self.__control_button(
+            self.__cancel_icon, self.__cancel_button_clicked
+        )
 
         self.__layout.addWidget(self.__time_text)
         self.__layout.addWidget(self.__controls_box)
 
-    def __control_button(self, name: str, slot: Callable):
-        icon = QIcon(f":/assets/{name}.svg")
+    def __create_control_icon(self, name: str):
+        return QIcon(f":/assets/{name}.svg")
+
+    def __control_button(self, icon: QIcon, slot: Callable):
         ICON_SIZE = 32
         button = QtWidgets.QPushButton()
 
@@ -56,12 +69,25 @@ class StopwatchWidget(QtWidgets.QWidget):
         self.__controls_box_layout.addWidget(button)
         return button
 
-    def __on_timer_start(self, seconds: int):
+    def __on_start(self, seconds: int):
         self.__time_text.setText(self.__format_time(seconds))
 
-        self.__play_button.setEnabled(False)
-        self.__pause_button.setEnabled(True)
-        self.__cancel_button.setEnabled(True)
+        self.__poll_timer_connection = self.__poll_timer.timeout.connect(
+            self.__on_poll_timer_timeout
+        )
+        self.__poll_timer.start(self.__TIMEOUT_INTERVAL)
+
+        # Wait for next tick otherwise focus will still be stolen by the form.
+        QtCore.QTimer().singleShot(0, self.__play_pause_button.setFocus)
+
+    @QtCore.Slot()
+    def __play_pause_button_clicked(self):
+        self.__stopwatch_controller.toggle()
+
+    @QtCore.Slot()
+    def __on_resume(self, _):
+        # show pause icon
+        self.__play_pause_button.setIcon(self.__pause_icon)
 
         self.__poll_timer_connection = self.__poll_timer.timeout.connect(
             self.__on_poll_timer_timeout
@@ -69,26 +95,9 @@ class StopwatchWidget(QtWidgets.QWidget):
         self.__poll_timer.start(self.__TIMEOUT_INTERVAL)
 
     @QtCore.Slot()
-    def __resume(self):
-        self.__play_button.setEnabled(False)
-        self.__pause_button.setEnabled(True)
-        self.__cancel_button.setEnabled(True)
-
-        self.__poll_timer_connection = self.__poll_timer.timeout.connect(
-            self.__on_poll_timer_timeout
-        )
-        self.__poll_timer.start(self.__TIMEOUT_INTERVAL)
-        self.__stopwatch_controller.resume()
-
-        # We came here from clicking the resume button.
-        # Most likely the user wants to pause next if interacting with this
-        self.__pause_button.setFocus()
-
-    @QtCore.Slot()
-    def __pause(self):
-        self.__play_button.setEnabled(True)
-        self.__pause_button.setEnabled(False)
-        self.__cancel_button.setEnabled(True)
+    def __on_pause(self, _):
+        # show play icon
+        self.__play_pause_button.setIcon(self.__play_icon)
 
         self.__poll_timer.stop()
 
@@ -96,14 +105,11 @@ class StopwatchWidget(QtWidgets.QWidget):
         self.__poll_timer.timeout.disconnect(self.__poll_timer_connection)
         self.__poll_timer_connection = None
 
-        self.__stopwatch_controller.pause()
-
-        # We came here from clicking the pause button.
-        # Most likely the user wants to resume next if interacting with this
-        self.__play_button.setFocus()
-
     @QtCore.Slot()
-    def __cancel(self, _):
+    def __cancel_button_clicked(self, _):
+        self.__stopwatch_controller.cancel()
+
+    def __on_cancel(self, _):
         self.__poll_timer.stop()
 
         # Connection might be None, since we can cancel, while paused,
@@ -112,11 +118,12 @@ class StopwatchWidget(QtWidgets.QWidget):
             self.__poll_timer.timeout.disconnect(self.__poll_timer_connection)
             self.__poll_timer_connection = None
 
-        self.__stopwatch_controller.cancel()
-
-    def __on_timer_finish(self, _):
+    def __on_finish(self, _):
+        self.__poll_timer.stop()
         if self.__poll_timer.isActive():
             self.__poll_timer.stop()
+            assert self.__poll_timer_connection is not None
+            self.__poll_timer.disconnect(self.__poll_timer_connection)
         self.__time_text.setText(self.__INITIAL_TEXT)
 
     @QtCore.Slot()
