@@ -1,3 +1,4 @@
+from stats.dialog import StatsDialog
 from task.adapter import TaskAdapter
 from task.repo import TaskRepo
 from PySide6 import QtGui
@@ -48,7 +49,7 @@ class TimeSliceWindow(QtWidgets.QMainWindow):
         self.__make_ui()
 
         QtGui.QShortcut(QtGui.QKeySequence("Alt+s"), self).activated.connect(
-            self.__toggle_todays_totals_table
+            self.__show_stats_dialog
         )
         QtGui.QShortcut(QtGui.QKeySequence("Alt+t"), self).activated.connect(
             self.__show_tag_dialog
@@ -63,8 +64,10 @@ class TimeSliceWindow(QtWidgets.QMainWindow):
     def __make_ui(self):
         self.setWindowTitle(app_info.APP_NAME)
 
+        # Maybe should be refactored?
         self.__tag_dialog: TagDialog | None = None
         self.__task_dialog: TaskDialog | None = None
+        self.__stats_dialog: StatsDialog | None = None
 
         self.setCentralWidget(QtWidgets.QWidget())
         self.__layout = QtWidgets.QVBoxLayout(self.centralWidget())
@@ -81,15 +84,8 @@ class TimeSliceWindow(QtWidgets.QMainWindow):
         )
         self.__stopwatch_widget.setEnabled(False)
 
-        self.__todays_totals_table = TodaysTotalsTable(
-            self.__time_slice_repo, self.__tag_repo
-        )
-
         self.__layout.addWidget(self.__new_slice_form)
         self.__layout.addWidget(self.__stopwatch_widget)
-        self.__layout.addWidget(
-            self.__todays_totals_table,
-        )
 
         self.__make_toolbar()
 
@@ -110,6 +106,12 @@ class TimeSliceWindow(QtWidgets.QMainWindow):
             self.__task_dialog = TaskDialog(self.__tag_repo, self.__task_adapter)
         self.__task_dialog.open()
 
+    @Slot()
+    def __show_stats_dialog(self):
+        if self.__stats_dialog is None:
+            self.__stats_dialog = StatsDialog(self.__time_slice_repo, self.__tag_repo)
+        self.__stats_dialog.open()
+
     def __make_toolbar(self):
         self.__toolbar = self.addToolBar("Toolbar!")
         self.__toolbar.setMovable(False)  # moving this toolbar would just be silly.
@@ -122,10 +124,9 @@ class TimeSliceWindow(QtWidgets.QMainWindow):
         task_action.triggered.connect(self.__show_task_dialog)
         self.__toolbar.addAction(task_action)
 
-    def __toggle_todays_totals_table(self):
-        self.__todays_totals_table.setVisible(
-            not self.__todays_totals_table.isVisible()
-        )
+        stats_action = QtGui.QAction("Stats", self.__toolbar)
+        stats_action.triggered.connect(self.__show_stats_dialog)
+        self.__toolbar.addAction(stats_action)
 
     def __update_widget_enabledness(self, is_timer_running: bool):
         self.__stopwatch_widget.setEnabled(is_timer_running)
