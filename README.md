@@ -4,6 +4,22 @@ A timer meant for workflows that frequently switch between tasks.
 
 # Usage
 
+Install the pip packages:
+
+```sh
+pip install -r requirements.txt
+```
+
+This creates the resource file to make icons accessible from code:
+```sh
+pyside6-rcc icons.qrc -o rc_icons.py
+```
+
+Run the app:
+```sh
+python main.py
+```
+
 This app was made entirely for my own purposes, and doesn't care about user friendliness:
 - Set up your tags using the tags menu.
 - Optionally setup your tasks using the tasks menu.
@@ -38,20 +54,6 @@ This app was made entirely for my own purposes, and doesn't care about user frie
 - `r`: Rename task
 
 # Planned features:
-- Move the total times to a separate tab
-- Separate window/tab for statistics
 - Change search bar to fuzzy search.
-
-# Setup
-
-Install the Python libraries, setting up a venv beforehand if you wish:
-
-```bash
-pip install -r requirements.txt
-```
-
-Run:
-
-```bash
-python main.py
-```
+- Actually writing tests.
+- Workflows
