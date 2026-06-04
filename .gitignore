@@ -2,3 +2,4 @@ __pycache__/
 data/
 venv/
 rc_icons.py
+.pytest_cache/

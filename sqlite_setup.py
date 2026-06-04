@@ -1,3 +1,4 @@
+from typing import Literal
 from collections.abc import Callable
 from datetime import date, datetime
 import pathlib
@@ -34,13 +35,19 @@ def register_adapters():
 type ConnectionFactory = Callable[[], sql.Connection]
 
 
-def create_connection_factory(path: pathlib.Path) -> ConnectionFactory:
+def create_connection_factory(
+    path: pathlib.Path | Literal[":memory:"],
+) -> ConnectionFactory:
     """Creates a function that gives sqlite3 connection to the database at `path`."""
 
-    path.parent.mkdir(parents=True, exist_ok=True)
+    if path == ":memory:":
+        uri = "file:testdb?mode=memory&cache=shared"
+    else:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        uri = path
 
     def make_connection():
-        connection = sql.connect(path, detect_types=sql.PARSE_DECLTYPES)
+        connection = sql.connect(uri, detect_types=sql.PARSE_DECLTYPES, uri=True)
         connection.execute("PRAGMA foreign_keys = ON")
         return connection
 
@@ -49,25 +56,19 @@ def create_connection_factory(path: pathlib.Path) -> ConnectionFactory:
 
 def ensure_tables_created(make_connection: ConnectionFactory):
     with make_connection() as connection:
-        connection.execute(
-            """CREATE TABLE IF NOT EXISTS time_slice (
+        connection.execute("""CREATE TABLE IF NOT EXISTS time_slice (
                     time_slice_id INTEGER PRIMARY KEY, 
                     created_at datetime, 
                     description TEXT, 
                     tag_id INTEGER, 
-                    duration INTEGER)"""
-        )
-        connection.execute(
-            """CREATE TABLE IF NOT EXISTS tag (
+                    duration INTEGER)""")
+        connection.execute("""CREATE TABLE IF NOT EXISTS tag (
                     tag_id INTEGER PRIMARY KEY, 
-                    name TEXT UNIQUE NOT NULL)"""
-        )
+                    name TEXT UNIQUE NOT NULL)""")
 
-        connection.execute(
-            """CREATE TABLE IF NOT EXISTS task (
+        connection.execute("""CREATE TABLE IF NOT EXISTS task (
                     task_id INTEGER PRIMARY KEY, 
                     parent_id INTEGER NULL REFERENCES task(task_id) ON DELETE CASCADE, 
                     description TEXT NOT NULL, 
-                    tag_id INTEGER NULL)"""
-        )
+                    tag_id INTEGER NULL)""")
     connection.close()

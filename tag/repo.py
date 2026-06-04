@@ -14,10 +14,13 @@ class TagRepo:
     def __post_init__(self):
         self.tags_changed = Event[None]()
 
-    def add_tag(self, name: str):
-        with self.make_connection() as connection:
-            cursor = connection.execute("""INSERT INTO tag(name) VALUES (?)""", (name,))
-        connection.close()
+    def add_tag(self, name: str) -> Tag:
+        conn = self.make_connection()
+        try:
+            with conn:
+                cursor = conn.execute("""INSERT INTO tag(name) VALUES (?)""", (name,))
+        finally:
+            conn.close()
 
         tag_id = cast(int, cursor.lastrowid)
         tag = Tag(tag_id=tag_id, name=name)
@@ -37,9 +40,10 @@ class TagRepo:
         return tag
 
     def delete_tag(self, name: str):
-        with self.make_connection() as connection:
-            connection.execute("DELETE FROM tag WHERE name=?", (name,))
-        connection.close()
+        conn = self.make_connection()
+        with conn:
+            conn.execute("DELETE from tag WHERE name=?", (name,))
+        conn.close()
         self.tags_changed.invoke(None)
 
     def get_tags(self) -> list[Tag]:
