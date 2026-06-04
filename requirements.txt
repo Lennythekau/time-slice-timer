@@ -1,4 +1,17 @@
+docify==1.2.1
+iniconfig==2.3.0
+libcst==1.8.6
+Nuitka==2.7.11
+ordered-set==4.1.0
+packaging==26.2
+patchelf==0.17.2.4
+pluggy==1.6.0
+Pygments==2.20.0
 PySide6==6.11.0
 PySide6_Addons==6.11.0
 PySide6_Essentials==6.11.0
+pytest==9.0.3
+PyYAML==6.0.3
 shiboken6==6.11.0
+tqdm==4.67.3
+zstandard==0.25.0
