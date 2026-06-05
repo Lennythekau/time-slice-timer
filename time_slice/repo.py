@@ -17,20 +17,6 @@ class TimeSliceRepo:
     def __post_init__(self):
         self.time_slice_added = Event[TimeSlice]()
 
-    def __convert_rows_to_time_slices(self, rows: list[tuple]):
-        return [TimeSlice(*row) for row in rows]
-
-    def __ensure_date_only(self, date: datetime.date | None):
-        """Given `date`, return the date only component. If date is `None`, then just give today's date (no time component)."""
-        if date is None:
-            return datetime.date.today()
-
-        # Unfortunately, `datetime.datetime` inherits from `datetime.date`, so we might accidentally have some time info.
-        if isinstance(date, datetime.datetime):
-            date = date.now()
-
-        return date
-
     def add_slice(
         self,
         time_slice: RunningTimeSlice,
@@ -58,8 +44,9 @@ class TimeSliceRepo:
         self.time_slice_added.invoke(created_time_slice)
         return created_time_slice
 
-    def get_by_date(self, date: datetime.date | None = None) -> list[TimeSlice]:
-        date = self.__ensure_date_only(date)
+    def get_by_date(self, date: datetime.date) -> list[TimeSlice]:
+        if isinstance(date, datetime.datetime):
+            date = date.date()
 
         with self.make_connection() as connection:
             rows = connection.execute(
@@ -68,10 +55,11 @@ class TimeSliceRepo:
 
         connection.close()
 
-        return self.__convert_rows_to_time_slices(rows)
+        return [TimeSlice(*row) for row in rows]
 
-    def get_times_by_tag(self, date: datetime.date | None = None):
-        date = self.__ensure_date_only(date)
+    def get_times_by_tag(self, date: datetime.date):
+        if isinstance(date, datetime.datetime):
+            date = date.date()
 
         with self.make_connection() as connection:
             rows = connection.execute(

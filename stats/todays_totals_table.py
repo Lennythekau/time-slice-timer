@@ -1,3 +1,4 @@
+import datetime
 from PySide6 import QtWidgets
 from PySide6.QtGui import Qt
 
@@ -27,7 +28,7 @@ class TodaysTotalsTable(QtWidgets.QTableWidget):
         self.verticalHeader().setVisible(False)
 
     def __update_times(self):
-        times = self.__time_slice_repo.get_times_by_tag()
+        times = self.__time_slice_repo.get_times_by_tag(datetime.date.today())
         self.setRowCount(len(times))
         self.setHorizontalHeaderLabels(["Tag", "Total"])
 
