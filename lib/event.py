@@ -1,7 +1,7 @@
+from typing import Any
 from collections.abc import Callable
 
-
-type Listener[TArg] = Callable[[TArg], None]
+type Listener[TArg] = Callable[[TArg], Any]
 
 
 class Event[TArg]:

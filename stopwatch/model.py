@@ -1,3 +1,4 @@
+from typing import Callable
 import time
 
 from lib.event import Event
@@ -6,12 +7,17 @@ from lib.event import Event
 class StopwatchModel:
     UNSET = -1
 
-    def __init__(self):
+    def __init__(self, get_time: Callable[[], float] = time.time):
         """
         Creates a new `TimerModel`.
         """
+        # Is the stopwatch still running? ie if we call update_time, will it track it?
         self.is_paused = True
+
+        # Have we finished the time slice (not just reset it)?
         self.is_finished = False
+
+        self.__get_time = get_time
 
         self.started = Event[int]()
         self.paused = Event[None]()
@@ -40,14 +46,14 @@ class StopwatchModel:
 
     def pause(self):
         self.is_paused = True
-        time_spent = time.time() - self.__previous_start_time
+        time_spent = self.__get_time() - self.__previous_start_time
         self.__remaining_time -= time_spent
 
         self.paused.invoke(None)
 
     def resume(self):
         self.is_paused = False
-        self.__previous_start_time = time.time()
+        self.__previous_start_time = self.__get_time()
 
         self.resumed.invoke(None)
 
@@ -59,13 +65,14 @@ class StopwatchModel:
         if self.is_paused:
             return self.__remaining_time
 
-        time_spent = time.time() - self.__previous_start_time
+        time_spent = self.__get_time() - self.__previous_start_time
         time_left = self.__remaining_time - time_spent
         return time_left
 
     def update_time(self):
-
         time_left = self.__get_remaining_time()
+        if time_left == StopwatchModel.UNSET:
+            return time_left
 
         if self.is_finished:
             return 0
