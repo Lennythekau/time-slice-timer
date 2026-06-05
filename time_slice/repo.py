@@ -22,7 +22,7 @@ class TimeSliceRepo:
         time_slice: RunningTimeSlice,
         date: datetime.datetime | None = None,
     ):
-        date = datetime.datetime.now() if date is None else date
+        date = date or datetime.datetime.today()
 
         with self.make_connection() as connection:
             cursor = connection.execute(
@@ -43,19 +43,6 @@ class TimeSliceRepo:
 
         self.time_slice_added.invoke(created_time_slice)
         return created_time_slice
-
-    def get_by_date(self, date: datetime.date) -> list[TimeSlice]:
-        if isinstance(date, datetime.datetime):
-            date = date.date()
-
-        with self.make_connection() as connection:
-            rows = connection.execute(
-                "SELECT * FROM time_slice WHERE DATE(created_at)=?", ((date),)
-            ).fetchall()
-
-        connection.close()
-
-        return [TimeSlice(*row) for row in rows]
 
     def get_times_by_tag(self, date: datetime.date):
         if isinstance(date, datetime.datetime):
