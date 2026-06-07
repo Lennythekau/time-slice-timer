@@ -24,6 +24,3 @@ class TimeSlice(NamedTuple):
     description: str
     tag: Tag
     duration: int
-
-    def __hash__(self):
-        return hash(self.time_slice_id)
