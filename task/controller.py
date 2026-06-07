@@ -1,9 +1,8 @@
-from task.model import TaskDraft
+from dataclasses import dataclass, field
+
 from tag.model import Tag
-from dataclasses import field
-from task.model import Task
+from task.model import Task, TaskDraft
 from task.repo import TaskRepo
-from dataclasses import dataclass
 
 
 @dataclass

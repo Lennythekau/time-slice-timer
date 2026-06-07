@@ -1,4 +1,3 @@
-from task.controller import TaskController
 import sys
 
 from PySide6 import QtWidgets
@@ -14,6 +13,7 @@ from stopwatch.model import StopwatchModel
 from tag.controller import TagController
 from tag.repo import TagRepo
 from task.adapter import TaskAdapter
+from task.controller import TaskController
 from task.repo import TaskRepo
 from time_slice.controller import TimeSliceController
 from time_slice.main_window import TimeSliceWindow

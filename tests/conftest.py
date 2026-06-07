@@ -1,19 +1,19 @@
+import datetime
+
+import pytest
+
+import sqlite_setup
+from tag.repo import TagRepo
 from task.controller import TaskController
 from task.repo import TaskRepo
-import datetime
-from sqlite_setup import register_adapters
 from time_slice.repo import TimeSliceRepo
-from sqlite_setup import ConnectionFactory
-from tag.repo import TagRepo
-import sqlite_setup
-import pytest
 
 
 @pytest.fixture
 def make_memory_connection():
     # Sqlite will kill the memory database if all connections to it are killed.
     stay_alive_connection = sqlite_setup.create_connection_factory(":memory:")()
-    register_adapters()
+    sqlite_setup.register_adapters()
 
     make_connection = sqlite_setup.create_connection_factory(":memory:")
 
@@ -31,17 +31,17 @@ def today():
 
 
 @pytest.fixture
-def time_slice_repo(make_memory_connection: ConnectionFactory):
+def time_slice_repo(make_memory_connection: sqlite_setup.ConnectionFactory):
     return TimeSliceRepo(make_memory_connection)
 
 
 @pytest.fixture
-def tag_repo(make_memory_connection: ConnectionFactory):
+def tag_repo(make_memory_connection: sqlite_setup.ConnectionFactory):
     return TagRepo(make_memory_connection)
 
 
 @pytest.fixture
-def task_repo(make_memory_connection: ConnectionFactory):
+def task_repo(make_memory_connection: sqlite_setup.ConnectionFactory):
     return TaskRepo(make_memory_connection)
 
 

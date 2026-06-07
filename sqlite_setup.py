@@ -1,8 +1,8 @@
-from typing import Literal
-from collections.abc import Callable
-from datetime import date, datetime
 import pathlib
 import sqlite3 as sql
+from collections.abc import Callable
+from datetime import date, datetime
+from typing import Literal
 
 
 def __adapt_date_iso(val: date):

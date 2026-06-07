@@ -1,6 +1,6 @@
 import sqlite3
 
-from .repo import TagRepo
+from tag.repo import TagRepo
 
 
 class TagController:

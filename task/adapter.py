@@ -1,5 +1,3 @@
-from task.model import TaskDraft
-from task.controller import TaskController
 from typing import Any, cast, override
 
 from PySide6.QtCore import (
@@ -11,7 +9,8 @@ from PySide6.QtCore import (
     Signal,
 )
 
-from .model import Task
+from task.controller import TaskController
+from task.model import Task, TaskDraft
 
 type Index = QModelIndex | QPersistentModelIndex
 

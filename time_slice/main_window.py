@@ -1,25 +1,22 @@
-from stats.dialog import StatsDialog
-from task.adapter import TaskAdapter
-from task.repo import TaskRepo
-from PySide6 import QtGui
-from PySide6 import QtWidgets
+from PySide6 import QtGui, QtWidgets
 from PySide6.QtCore import Slot
 
 import app_info
-from stats.todays_totals_table import TodaysTotalsTable
+from stats.dialog import StatsDialog
 from stopwatch.controller import StopwatchController
 from stopwatch.widget import StopwatchWidget
 from tag.controller import TagController
 from tag.dialog import TagDialog
 from tag.repo import TagRepo
+from task.adapter import TaskAdapter
 from task.dialog import TaskDialog
+from task.repo import TaskRepo
+from time_slice.controller import TimeSliceController
+from time_slice.form import NewSliceForm
+from time_slice.model import RunningTimeSlice
+from time_slice.repo import TimeSliceRepo
+from time_slice.times_up_dialog import TimesUpDialog
 from user_session import UserSession
-
-from .controller import TimeSliceController
-from .form import NewSliceForm
-from .model import RunningTimeSlice
-from .repo import TimeSliceRepo
-from .times_up_dialog import TimesUpDialog
 
 
 class TimeSliceWindow(QtWidgets.QMainWindow):

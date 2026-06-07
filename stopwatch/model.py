@@ -1,5 +1,5 @@
-from typing import Callable
 import time
+from typing import Callable
 
 from lib.event import Event
 

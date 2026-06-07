@@ -1,11 +1,8 @@
-from PySide6 import QtGui
-from typing import override
-from typing import Callable
+from typing import Callable, override
 
+from PySide6 import QtGui
 from PySide6.QtCore import QModelIndex
-from PySide6.QtGui import QShortcut
-from PySide6.QtGui import QKeySequence
-from PySide6.QtWidgets import QHeaderView
+from PySide6.QtGui import QKeySequence, QShortcut
 from PySide6.QtWidgets import QTreeView
 
 from tag.delegate import TagDelegate

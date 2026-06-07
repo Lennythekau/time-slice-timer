@@ -1,5 +1,5 @@
-from typing import NamedTuple
 from dataclasses import dataclass, field
+from typing import NamedTuple
 
 from tag.model import EMPTY_TAG, Tag
 

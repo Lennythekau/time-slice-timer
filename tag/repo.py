@@ -3,8 +3,7 @@ from typing import cast
 
 from lib.event import Event
 from sqlite_setup import ConnectionFactory
-
-from .model import EMPTY_TAG, Tag
+from tag.model import EMPTY_TAG, Tag
 
 
 @dataclass

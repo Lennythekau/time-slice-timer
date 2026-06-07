@@ -1,5 +1,5 @@
-from typing import Any
-from typing import override
+from typing import Any, override
+
 from PySide6.QtCore import QAbstractListModel, QModelIndex
 from PySide6.QtGui import Qt
 

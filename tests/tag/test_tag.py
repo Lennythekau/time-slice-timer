@@ -1,9 +1,8 @@
-from tag.model import Tag
 import sqlite3
 
 import pytest
 
-from tag.model import EMPTY_TAG
+from tag.model import EMPTY_TAG, Tag
 from tag.repo import TagRepo
 
 

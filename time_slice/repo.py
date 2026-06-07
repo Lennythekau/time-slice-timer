@@ -1,13 +1,12 @@
-from dataclasses import dataclass
 import datetime
+import sqlite3 as sql
+from collections.abc import Callable
+from dataclasses import dataclass
 from typing import cast
 
 from lib.event import Event
-from time_slice.model import RunningTimeSlice, TimeSlice
 from tag.model import Tag
-
-from collections.abc import Callable
-import sqlite3 as sql
+from time_slice.model import RunningTimeSlice, TimeSlice
 
 
 @dataclass

@@ -1,15 +1,12 @@
-from PySide6 import QtCore
-from PySide6.QtCore import QAbstractItemModel
 from typing import cast, override
 
+from PySide6 import QtCore, QtWidgets
+from PySide6.QtCore import QAbstractItemModel, QModelIndex, QPersistentModelIndex
 from PySide6.QtGui import Qt
-from tag.repo import TagRepo
-from PySide6 import QtWidgets
-from PySide6.QtCore import QPersistentModelIndex
-from PySide6.QtCore import QModelIndex
 from PySide6.QtWidgets import QStyledItemDelegate
 
 from tag.dropdown import TagDropDown
+from tag.repo import TagRepo
 
 
 class TagDelegate(QStyledItemDelegate):

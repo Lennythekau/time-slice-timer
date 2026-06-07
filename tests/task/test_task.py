@@ -1,7 +1,7 @@
 from tag.repo import TagRepo
+from task.controller import TaskController
 from task.model import TaskDraft
 from task.repo import TaskRepo
-from task.controller import TaskController
 
 
 def test_create_task_on_one_task_returns_correct_task(task_controller: TaskController):

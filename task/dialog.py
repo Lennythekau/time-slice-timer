@@ -3,7 +3,6 @@ from PySide6 import QtWidgets
 from tag.repo import TagRepo
 
 from .adapter import TaskAdapter
-from .repo import TaskRepo
 from .view import TasksView
 
 

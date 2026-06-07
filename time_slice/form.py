@@ -1,10 +1,9 @@
 from typing import cast
-from PySide6 import QtGui
-from PySide6 import QtWidgets
+
+from PySide6 import QtGui, QtWidgets
 from PySide6.QtCore import (
     QAbstractProxyModel,
     QModelIndex,
-    QStringListModel,
     Signal,
     Slot,
 )
@@ -14,9 +13,8 @@ from tag.repo import TagRepo
 from task.adapter import TaskAdapter
 from task.flattened_adapter import FlattenedTaskAdapter
 from task.repo import TaskRepo
+from time_slice.model import RunningTimeSlice
 from user_session import UserSession
-
-from .model import RunningTimeSlice
 
 
 class NewSliceForm(QtWidgets.QWidget):

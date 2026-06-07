@@ -3,10 +3,9 @@ from typing import Literal
 from PySide6 import QtWidgets
 from PySide6.QtCore import Slot
 
+from tag.controller import TagController
 from tag.model import EMPTY_TAG
-
-from .controller import TagController
-from .repo import TagRepo
+from tag.repo import TagRepo
 
 
 class TagDialog(QtWidgets.QDialog):

@@ -1,8 +1,7 @@
 from collections.abc import Callable
 
 from PySide6 import QtCore, QtWidgets
-from PySide6.QtGui import QIcon
-from PySide6.QtGui import Qt
+from PySide6.QtGui import QIcon, Qt
 
 import rc_icons
 

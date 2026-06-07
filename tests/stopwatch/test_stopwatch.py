@@ -1,5 +1,6 @@
 import pytest
 from pytest import approx
+
 from stopwatch.model import StopwatchModel
 from tests.stopwatch.mock_timer import MockTimer
 

@@ -1,11 +1,9 @@
-from task.model import TaskDraft
 from dataclasses import dataclass
 
 from lib.event import Event
 from sqlite_setup import ConnectionFactory
 from tag.model import EMPTY_TAG, Tag
-
-from .model import Task
+from task.model import Task, TaskDraft
 
 
 @dataclass

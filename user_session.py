@@ -1,5 +1,5 @@
-from time_slice.model import RunningTimeSlice
 from stopwatch.model import StopwatchModel
+from time_slice.model import RunningTimeSlice
 
 
 class UserSession:

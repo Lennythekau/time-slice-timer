@@ -1,8 +1,9 @@
+from PySide6 import QtWidgets
+from PySide6.QtWidgets import QVBoxLayout
+
+from stats.todays_totals_table import TodaysTotalsTable
 from tag.repo import TagRepo
 from time_slice.repo import TimeSliceRepo
-from PySide6.QtWidgets import QVBoxLayout
-from stats.todays_totals_table import TodaysTotalsTable
-from PySide6 import QtWidgets
 
 
 class StatsDialog(QtWidgets.QDialog):
