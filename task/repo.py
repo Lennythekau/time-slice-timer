@@ -1,3 +1,4 @@
+from task.model import TaskDraft
 from dataclasses import dataclass
 
 from lib.event import Event
@@ -15,8 +16,9 @@ class TaskRepo:
         self.tasks_changed = Event[None]()
 
     def delete_task(self, task_id: int):
-        """These ids should form a subtree for correctness."""
+        """Deletes the whole tree of tasks, rooted at the task with id `task_id`."""
 
+        # This works because in the sqlite setup, we use cascade
         with self.make_connection() as connection:
             connection.execute("DELETE FROM task WHERE task_id=?", (task_id,))
         connection.close()
@@ -68,25 +70,34 @@ class TaskRepo:
 
         return processes
 
-    def write(self, task: Task):
-        parent_id = None if task.parent is None else task.parent.task_id
+    def create_task(self, draft: TaskDraft) -> Task:
+        if draft.parent is not None:
+            parent_id = draft.parent.task_id
+        else:
+            parent_id = None
+
         with self.make_connection() as connection:
             # Write
-            if task.task_id == task.UNSET_ID:
-                cursor = connection.execute(
-                    "INSERT INTO task (description, parent_id, tag_id) VALUES (?, ?, ?)",
-                    (task.description, parent_id, task.tag.tag_id),
-                )
-                assert cursor.lastrowid is not None
-                task.task_id = cursor.lastrowid
-            # Update
-            else:
-                connection.execute(
-                    "UPDATE task SET description=?, parent_id=?, tag_id=? WHERE task_id=?",
-                    (task.description, parent_id, task.tag.tag_id, task.task_id),
-                )
+            cursor = connection.execute(
+                "INSERT INTO task (description, parent_id, tag_id) VALUES (?, ?, ?)",
+                (draft.description, parent_id, draft.tag.tag_id),
+            )
+            assert cursor.lastrowid is not None
 
+        # Ignore the index part of draft for now.
+        task = Task(cursor.lastrowid, *draft[:-1])
         connection.close()
         self.tasks_changed.invoke(None)
 
+        return task
+
+    def update(self, task: Task):
+        """Only for updating the description or the tag!"""
+        with self.make_connection() as connection:
+            connection.execute(
+                "UPDATE task SET description=?,tag_id=? WHERE task_id=?",
+                (task.description, task.tag.tag_id, task.task_id),
+            )
+        connection.close()
+        self.tasks_changed.invoke(None)
         return task

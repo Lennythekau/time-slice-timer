@@ -1,3 +1,5 @@
+from task.model import TaskDraft
+from task.controller import TaskController
 from typing import Any, cast, override
 
 from PySide6.QtCore import (
@@ -9,10 +11,7 @@ from PySide6.QtCore import (
     Signal,
 )
 
-from tag.model import Tag
-
 from .model import Task
-from .repo import TaskRepo
 
 type Index = QModelIndex | QPersistentModelIndex
 
@@ -21,13 +20,9 @@ class TaskAdapter(QAbstractItemModel):
     task_created = Signal(QModelIndex)
     task_inserted = Signal(QModelIndex)
 
-    def __init__(
-        self,
-        task_repo: TaskRepo,
-    ):
+    def __init__(self, task_controller: TaskController):
         super().__init__()
-        self.__task_repo = task_repo
-        self.__root = self.__task_repo.get_processes()
+        self.__task_controller = task_controller
 
     def set_selection_model(self, selection_model: QItemSelectionModel):
         self.__selection_model = selection_model
@@ -38,7 +33,7 @@ class TaskAdapter(QAbstractItemModel):
         )
 
     def __try_move_to_first(self):
-        if self.__root:
+        if self.__task_controller.processes:
             index = self.index(0, 0, QModelIndex())
             self.__select(index)
             return True
@@ -190,7 +185,10 @@ class TaskAdapter(QAbstractItemModel):
         indices = self.__selection_model.selectedIndexes()
         # No selection
         if not indices:
-            preceding_index = self.index(len(self.__root) - 1, 0, QModelIndex())
+            # default preceding_index to be the index of the last process
+            preceding_index = self.index(
+                len(self.__task_controller.processes) - 1, 0, QModelIndex()
+            )
         else:
             preceding_index = indices[0]
 
@@ -236,6 +234,11 @@ class TaskAdapter(QAbstractItemModel):
         new_column = (index.column() + 1) % column_count
         self.__select(self.index(index.row(), new_column, index.parent()))
 
+    def get_task_from_index(self, index: Index):
+        if index.isValid():
+            return cast(Task, index.internalPointer())
+        return None
+
     @override
     def insertRows(self, row: int, count: int, parent: Index = QModelIndex()) -> bool:
         if count != 1:
@@ -243,30 +246,19 @@ class TaskAdapter(QAbstractItemModel):
 
         self.beginInsertRows(parent, row, row)
 
-        if parent.isValid():
-            parent_node = cast(Task, parent.internalPointer())
-            destination = parent_node.sub_tasks
-        else:
-            destination = self.__root
-            parent_node = None
-
-        destination.insert(row, Task(Task.UNSET_ID, parent_node, ""))
+        parent_task = self.get_task_from_index(parent)
+        self.__task_controller.create_task(TaskDraft(parent_task, index=row))
 
         self.endInsertRows()
         return True
 
     @override
     def removeRows(self, row: int, count: int, parent: Index = QModelIndex()) -> bool:
-        if parent.isValid():
-            task: Task = parent.internalPointer()
-            affected = task.sub_tasks
-        else:
-            affected = self.__root
-        self.beginRemoveRows(parent, row, row + count - 1)
+        """Deletes the subtasks of the `parent` at indices `row` to `row + count - 1`."""
 
-        for _ in range(count):
-            task = affected.pop(row)
-            self.__task_repo.delete_task(task.task_id)
+        self.beginRemoveRows(parent, row, row + count - 1)
+        parent_task = self.get_task_from_index(parent)
+        self.__task_controller.remove_tasks(parent_task, row, count)
         self.endRemoveRows()
         return True
 
@@ -280,28 +272,17 @@ class TaskAdapter(QAbstractItemModel):
 
     @override
     def parent(self, index: QModelIndex):  # type: ignore[override]
-        if not index.isValid():
+        child_task = self.get_task_from_index(index)
+        if child_task is None:
             return QModelIndex()
-
-        child_item: Task = index.internalPointer()
 
         # We have a process as the child, so the 'parent' is the root
         # So return an invalid model index as expected.
-        if child_item.is_process():
+        if child_task.parent is None:
             return QModelIndex()
 
-        parent_item = child_item.parent
-        assert parent_item is not None
-
-        # Parent's parent is the root.
-        if parent_item.is_process():
-            parent_row = self.__root.index(parent_item)
-
-        # Parent's parent is just another task
-        else:
-            assert parent_item.parent is not None
-            parent_row = parent_item.parent.sub_tasks.index(parent_item)
-
+        parent_item = child_task.parent
+        parent_row = self.__task_controller.find_task_in_parent(parent_item)
         return self.createIndex(parent_row, 0, parent_item)
 
     @override
@@ -312,14 +293,10 @@ class TaskAdapter(QAbstractItemModel):
         if not self.hasIndex(row, column, parent):
             return QModelIndex()
 
-        # Child not top level
-        if parent.isValid():
-            parent_item: Task = parent.internalPointer()
-            indexed_item = parent_item.sub_tasks[row]
-        # Child is top level (parent is the root of the tree).
-        else:
-            indexed_item = self.__root[row]
-        return self.createIndex(row, column, indexed_item)
+        parent_task = self.get_task_from_index(parent)
+        child_tasks = self.__task_controller.get_children(parent_task)
+        task = child_tasks[row]
+        return self.createIndex(row, column, task)
 
     @override
     def columnCount(self, parent: Index = QModelIndex()) -> int:
@@ -329,43 +306,41 @@ class TaskAdapter(QAbstractItemModel):
 
     @override
     def rowCount(self, parent: Index = QModelIndex()) -> int:
-        if parent.isValid():
-            parent_task: Task = parent.internalPointer()
-            return len(parent_task.sub_tasks)
-
-        # Parent not valid => we have the root as the parent
-        return len(self.__root)
+        parent_task = self.get_task_from_index(parent)
+        return len(self.__task_controller.get_children(parent_task))
 
     @override
     def data(self, index: Index, role: int = Qt.ItemDataRole.DisplayRole) -> Any:
-        if not index.isValid():
+        task = self.get_task_from_index(index)
+        if task is None:
             return None
 
         if role in (Qt.ItemDataRole.DisplayRole, Qt.ItemDataRole.EditRole):
             if index.column() == 0:
-                task: Task = index.internalPointer()
                 return task.description
             if index.column() == 1:
-                task: Task = index.internalPointer()
                 return task.tag.name
 
     @override
     def setData(
         self, index: Index, value: Any, role: int = Qt.ItemDataRole.EditRole
     ) -> bool:
-        if role != Qt.ItemDataRole.EditRole or not index.isValid():
+
+        if role != Qt.ItemDataRole.EditRole:
             return False
 
-        if index.column() == 0:
-            task: Task = index.internalPointer()
-            task.description = value
-            task = self.__task_repo.write(task)
-        elif index.column() == 1:
-            task: Task = index.internalPointer()
-            task.tag = value
-            task = self.__task_repo.write(task)
-        else:
-            assert False
+        task = self.get_task_from_index(index)
+        if task is None:
+            return False
+
+        update_funcs = [
+            self.__task_controller.update_description,
+            self.__task_controller.update_tag,
+        ]
+
+        column = index.column()
+        assert 0 <= column < len(update_funcs)
+        update_funcs[column](task, value)
 
         self.dataChanged.emit(index, index)
         return True
@@ -377,9 +352,11 @@ class TaskAdapter(QAbstractItemModel):
         orientation: Qt.Orientation,
         role: int = Qt.ItemDataRole.DisplayRole,
     ) -> Any:
-        if role != Qt.ItemDataRole.DisplayRole:
-            return
-        if orientation != Qt.Orientation.Horizontal:
+
+        if (
+            role != Qt.ItemDataRole.DisplayRole
+            or orientation != Qt.Orientation.Horizontal
+        ):
             return
 
         if section == 0:

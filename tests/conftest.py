@@ -1,3 +1,5 @@
+from task.controller import TaskController
+from task.repo import TaskRepo
 import datetime
 from sqlite_setup import register_adapters
 from time_slice.repo import TimeSliceRepo
@@ -29,12 +31,20 @@ def today():
 
 
 @pytest.fixture
-def time_slice_repo(
-    make_memory_connection: ConnectionFactory, today: datetime.datetime
-):
+def time_slice_repo(make_memory_connection: ConnectionFactory):
     return TimeSliceRepo(make_memory_connection)
 
 
 @pytest.fixture
 def tag_repo(make_memory_connection: ConnectionFactory):
     return TagRepo(make_memory_connection)
+
+
+@pytest.fixture
+def task_repo(make_memory_connection: ConnectionFactory):
+    return TaskRepo(make_memory_connection)
+
+
+@pytest.fixture
+def task_controller(task_repo: TaskRepo):
+    return TaskController(task_repo)

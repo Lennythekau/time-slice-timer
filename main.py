@@ -1,3 +1,4 @@
+from task.controller import TaskController
 import sys
 
 from PySide6 import QtWidgets
@@ -49,7 +50,8 @@ def main() -> None:
     stopwatch_controller = StopwatchController(stopwatch_model)
     time_slice_controller = TimeSliceController(user_session, time_slice_repo)
     tag_view_controller = TagController(tag_repo)
-    task_adapter = TaskAdapter(task_repo)
+    task_controller = TaskController(task_repo)
+    task_adapter = TaskAdapter(task_controller)
 
     window = TimeSliceWindow(
         user_session,

@@ -25,11 +25,10 @@ class FlattenedTaskAdapter(QAbstractListModel):
 
     def get_tag_name(self, index: QModelIndex):
         task: Task = self.__tasks[index.row()]
-        print(index.row(), index.column())
-        while not task.is_process():
-            assert task.parent is not None
+
+        while not task.parent is None:
             task = task.parent
-        print(task.tag.name)
+
         return task.tag.name
 
     def __dfs(self, index: QModelIndex = QModelIndex()):
