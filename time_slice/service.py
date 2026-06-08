@@ -56,6 +56,7 @@ class TimeSliceService:
             return
 
         self.time_slice_cancelled.invoke(self.__session.current_time_slice)
+        self.__session.current_time_slice = None
 
     def finish_slice(self):
         running_slice = self.__session.current_time_slice
