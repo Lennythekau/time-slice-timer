@@ -56,7 +56,7 @@ This app was made entirely for my own purposes, and doesn't care about user frie
 
 # Planned features:
 - Change search bar to fuzzy search.
-- Actually writing tests.
+- Improve UX of adding tags
 - Workflows
 
 # Reflections

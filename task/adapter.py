@@ -9,8 +9,9 @@ from PySide6.QtCore import (
     Signal,
 )
 
-from task.controller import TaskController
 from task.model import Task, TaskDraft
+from task.service import TaskService
+from user_session import UserSession
 
 type Index = QModelIndex | QPersistentModelIndex
 
@@ -19,9 +20,10 @@ class TaskAdapter(QAbstractItemModel):
     task_created = Signal(QModelIndex)
     task_inserted = Signal(QModelIndex)
 
-    def __init__(self, task_controller: TaskController):
+    def __init__(self, user_session: UserSession, task_service: TaskService):
         super().__init__()
-        self.__task_controller = task_controller
+        self.__session = user_session
+        self.__service = task_service
 
     def set_selection_model(self, selection_model: QItemSelectionModel):
         self.__selection_model = selection_model
@@ -32,7 +34,7 @@ class TaskAdapter(QAbstractItemModel):
         )
 
     def __try_move_to_first(self):
-        if self.__task_controller.processes:
+        if self.__session.processes:
             index = self.index(0, 0, QModelIndex())
             self.__select(index)
             return True
@@ -186,7 +188,7 @@ class TaskAdapter(QAbstractItemModel):
         if not indices:
             # default preceding_index to be the index of the last process
             preceding_index = self.index(
-                len(self.__task_controller.processes) - 1, 0, QModelIndex()
+                len(self.__session.processes) - 1, 0, QModelIndex()
             )
         else:
             preceding_index = indices[0]
@@ -246,7 +248,7 @@ class TaskAdapter(QAbstractItemModel):
         self.beginInsertRows(parent, row, row)
 
         parent_task = self.get_task_from_index(parent)
-        self.__task_controller.create_task(TaskDraft(parent_task, index=row))
+        self.__service.create_task(TaskDraft(parent_task, index=row))
 
         self.endInsertRows()
         return True
@@ -257,7 +259,7 @@ class TaskAdapter(QAbstractItemModel):
 
         self.beginRemoveRows(parent, row, row + count - 1)
         parent_task = self.get_task_from_index(parent)
-        self.__task_controller.remove_tasks(parent_task, row, count)
+        self.__service.remove_tasks(parent_task, row, count)
         self.endRemoveRows()
         return True
 
@@ -281,7 +283,7 @@ class TaskAdapter(QAbstractItemModel):
             return QModelIndex()
 
         parent_item = child_task.parent
-        parent_row = self.__task_controller.find_task_in_parent(parent_item)
+        parent_row = self.__service.find_task_in_parent(parent_item)
         return self.createIndex(parent_row, 0, parent_item)
 
     @override
@@ -293,7 +295,7 @@ class TaskAdapter(QAbstractItemModel):
             return QModelIndex()
 
         parent_task = self.get_task_from_index(parent)
-        child_tasks = self.__task_controller.get_children(parent_task)
+        child_tasks = self.__service.get_children(parent_task)
         task = child_tasks[row]
         return self.createIndex(row, column, task)
 
@@ -306,7 +308,7 @@ class TaskAdapter(QAbstractItemModel):
     @override
     def rowCount(self, parent: Index = QModelIndex()) -> int:
         parent_task = self.get_task_from_index(parent)
-        return len(self.__task_controller.get_children(parent_task))
+        return len(self.__service.get_children(parent_task))
 
     @override
     def data(self, index: Index, role: int = Qt.ItemDataRole.DisplayRole) -> Any:
@@ -333,8 +335,8 @@ class TaskAdapter(QAbstractItemModel):
             return False
 
         update_funcs = [
-            self.__task_controller.update_description,
-            self.__task_controller.update_tag,
+            self.__service.update_description,
+            self.__service.update_tag,
         ]
 
         column = index.column()

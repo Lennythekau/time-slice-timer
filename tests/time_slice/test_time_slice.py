@@ -1,4 +1,5 @@
 from datetime import datetime
+
 from tag.repo import TagRepo
 from time_slice.model import RunningTimeSlice
 from time_slice.repo import TimeSliceRepo

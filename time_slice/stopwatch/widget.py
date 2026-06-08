@@ -4,15 +4,14 @@ from PySide6 import QtCore, QtWidgets
 from PySide6.QtGui import QIcon, Qt
 
 import rc_icons
-
-from .controller import StopwatchController
-from .model import StopwatchModel
+from user_session import UserSession
 
 
 class StopwatchWidget(QtWidgets.QWidget):
 
     def __init__(
-        self, stopwatch_model: StopwatchModel, stopwatch_controller: StopwatchController
+        self,
+        user_session: UserSession,
     ):
         self.__TIMEOUT_INTERVAL = 250
         self.__INITIAL_TEXT = "unset"
@@ -22,14 +21,15 @@ class StopwatchWidget(QtWidgets.QWidget):
         self.__poll_timer = QtCore.QTimer(timerType=Qt.TimerType.CoarseTimer)
         self.__poll_timer_connection: QtCore.QMetaObject.Connection | None = None
 
-        self.__stopwatch_controller = stopwatch_controller
-        self.__model = stopwatch_model
+        self.__session = user_session
 
-        self.__model.started += self.__on_start
-        self.__model.paused += self.__on_pause
-        self.__model.resumed += self.__on_resume
-        self.__model.cancelled += self.__on_cancel
-        self.__model.finished += self.__on_finish
+        sw = self.__session.stopwatch
+
+        sw.started += self.__on_start
+        sw.paused += self.__on_pause
+        sw.resumed += self.__on_resume
+        sw.cancelled += self.__on_cancel
+        sw.finished += self.__on_finish
 
     def __make_ui(self):
         self.__layout = QtWidgets.QVBoxLayout(self)
@@ -39,7 +39,6 @@ class StopwatchWidget(QtWidgets.QWidget):
 
         self.__controls_box = QtWidgets.QGroupBox()
         self.__controls_box_layout = QtWidgets.QHBoxLayout(self.__controls_box)
-        # self.__controls_box_layout.setContentsMargins(0, 0, 0, 0)
 
         self.__play_icon = self.__create_control_icon("play")
         self.__pause_icon = self.__create_control_icon("pause")
@@ -69,6 +68,7 @@ class StopwatchWidget(QtWidgets.QWidget):
         return button
 
     def __on_start(self, seconds: int):
+        self.setEnabled(True)
         self.__time_text.setText(self.__format_time(seconds))
 
         self.__poll_timer_connection = self.__poll_timer.timeout.connect(
@@ -81,7 +81,10 @@ class StopwatchWidget(QtWidgets.QWidget):
 
     @QtCore.Slot()
     def __play_pause_button_clicked(self):
-        self.__stopwatch_controller.toggle()
+        if self.__session.stopwatch.is_paused:
+            self.__session.stopwatch.resume()
+        else:
+            self.__session.stopwatch.pause()
 
     @QtCore.Slot()
     def __on_resume(self, _):
@@ -106,7 +109,7 @@ class StopwatchWidget(QtWidgets.QWidget):
 
     @QtCore.Slot()
     def __cancel_button_clicked(self, _):
-        self.__stopwatch_controller.cancel()
+        self.__session.stopwatch.cancel()
 
     def __on_cancel(self, _):
         self.__poll_timer.stop()
@@ -116,6 +119,7 @@ class StopwatchWidget(QtWidgets.QWidget):
         if self.__poll_timer_connection is not None:
             self.__poll_timer.timeout.disconnect(self.__poll_timer_connection)
             self.__poll_timer_connection = None
+        self.setEnabled(False)
 
     def __on_finish(self, _):
         self.__poll_timer.stop()
@@ -124,10 +128,11 @@ class StopwatchWidget(QtWidgets.QWidget):
             assert self.__poll_timer_connection is not None
             self.__poll_timer.disconnect(self.__poll_timer_connection)
         self.__time_text.setText(self.__INITIAL_TEXT)
+        self.setEnabled(False)
 
     @QtCore.Slot()
     def __on_poll_timer_timeout(self):
-        seconds_left = round(self.__model.update_time())
+        seconds_left = round(self.__session.stopwatch.update_time())
         self.__time_text.setText(self.__format_time(seconds_left))
 
     def __format_time(self, seconds: int):

@@ -1,12 +1,28 @@
 import datetime
+from dataclasses import dataclass
 
 import pytest
 
 import sqlite_setup
 from tag.repo import TagRepo
-from task.controller import TaskController
+from tag.service import TagService
 from task.repo import TaskRepo
+from task.service import TaskService
 from time_slice.repo import TimeSliceRepo
+from time_slice.stopwatch.model import Stopwatch
+from user_session import UserSession
+
+
+@dataclass
+class MockTimer:
+    def __post_init__(self):
+        self.time: float = 0
+
+    def get_time(self):
+        return self.time
+
+    def tick(self, amount: float):
+        self.time = self.time + amount
 
 
 @pytest.fixture
@@ -46,5 +62,25 @@ def task_repo(make_memory_connection: sqlite_setup.ConnectionFactory):
 
 
 @pytest.fixture
-def task_controller(task_repo: TaskRepo):
-    return TaskController(task_repo)
+def timer():
+    return MockTimer()
+
+
+@pytest.fixture
+def stopwatch(timer: MockTimer):
+    return Stopwatch(timer.get_time)
+
+
+@pytest.fixture
+def user_session(stopwatch: Stopwatch):
+    return UserSession(stopwatch)
+
+
+@pytest.fixture
+def tag_service(user_session: UserSession, tag_repo: TagRepo):
+    return TagService(user_session, tag_repo)
+
+
+@pytest.fixture
+def task_service(user_session: UserSession, task_repo: TaskRepo):
+    return TaskService(user_session, task_repo)

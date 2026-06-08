@@ -1,23 +1,12 @@
-import pytest
 from pytest import approx
 
-from stopwatch.model import StopwatchModel
-from tests.stopwatch.mock_timer import MockTimer
+from tests.conftest import MockTimer
+from time_slice.stopwatch.model import Stopwatch
 
 START_TIME = 10
 
 
-@pytest.fixture
-def timer():
-    return MockTimer()
-
-
-@pytest.fixture
-def stopwatch(timer: MockTimer):
-    return StopwatchModel(timer.get_time)
-
-
-def test_initial_time(stopwatch: StopwatchModel):
+def test_initial_time(stopwatch: Stopwatch):
     stopwatch_time_limit = -1
 
     def on_stopwatch_started(time_limit: int):
@@ -31,7 +20,7 @@ def test_initial_time(stopwatch: StopwatchModel):
     assert stopwatch_time_limit == START_TIME
 
 
-def test_get_time_after_ticking(stopwatch: StopwatchModel, timer: MockTimer):
+def test_get_time_after_ticking(stopwatch: Stopwatch, timer: MockTimer):
     target_time = START_TIME
 
     ticks = 3.7, 0.8, 1.9
@@ -47,7 +36,7 @@ def test_get_time_after_ticking(stopwatch: StopwatchModel, timer: MockTimer):
         assert not stopwatch.is_paused
 
 
-def test_pause_gives_correct_state(stopwatch: StopwatchModel, timer: MockTimer):
+def test_pause_gives_correct_state(stopwatch: Stopwatch, timer: MockTimer):
     paused_triggered = False
 
     def on_stopwatch_paused(_):
@@ -70,7 +59,7 @@ def test_pause_gives_correct_state(stopwatch: StopwatchModel, timer: MockTimer):
     assert paused_triggered
 
 
-def test_pause_ignores_time_ticking(stopwatch: StopwatchModel, timer: MockTimer):
+def test_pause_ignores_time_ticking(stopwatch: Stopwatch, timer: MockTimer):
     stopwatch.start(START_TIME)
 
     tick = 1.9
@@ -84,7 +73,7 @@ def test_pause_ignores_time_ticking(stopwatch: StopwatchModel, timer: MockTimer)
     assert stopwatch.update_time() == approx(target_time)
 
 
-def test_cancel(stopwatch: StopwatchModel, timer: MockTimer):
+def test_cancel(stopwatch: Stopwatch, timer: MockTimer):
     cancelled_triggered = False
 
     def on_stopwatch_cancel(_):
@@ -97,7 +86,7 @@ def test_cancel(stopwatch: StopwatchModel, timer: MockTimer):
     timer.tick(3)
     stopwatch.cancel()
 
-    assert stopwatch.update_time() == approx(StopwatchModel.UNSET)
+    assert stopwatch.update_time() == approx(Stopwatch.UNSET)
     assert stopwatch.is_paused
     assert not stopwatch.is_finished
     assert cancelled_triggered

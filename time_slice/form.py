@@ -4,43 +4,42 @@ from PySide6 import QtGui, QtWidgets
 from PySide6.QtCore import (
     QAbstractProxyModel,
     QModelIndex,
-    Signal,
     Slot,
 )
 
 from tag.dropdown import TagDropDown
-from tag.repo import TagRepo
-from task.adapter import TaskAdapter
+from tag.service import TagService
 from task.flattened_adapter import FlattenedTaskAdapter
-from task.repo import TaskRepo
 from time_slice.model import RunningTimeSlice
+from time_slice.service import TimeSliceService
 from user_session import UserSession
 
 
 class NewSliceForm(QtWidgets.QWidget):
-    submitted = Signal(RunningTimeSlice)
 
     def __init__(
         self,
         user_session: UserSession,
-        tag_repo: TagRepo,
-        task_repo: TaskRepo,
-        task_adapter: TaskAdapter,
+        time_slice_service: TimeSliceService,
+        tag_service: TagService,
+        task_adapter: FlattenedTaskAdapter,
     ):
 
         super().__init__()
 
-        self.__user_session = user_session
-        self.__task_adapter = FlattenedTaskAdapter(task_repo, task_adapter)
-
-        self.__make_ui(tag_repo)
+        self.__session = user_session
+        self.__time_slice_service = time_slice_service
+        self.__tag_service = tag_service
+        self.__task_adapter = task_adapter
+        self.__make_ui()
         self.__setup_shortcuts()
 
-        self.__user_session.stopwatch.started += lambda _: self.setEnabled(False)
-        self.__user_session.stopwatch.finished += lambda _: self.setEnabled(True)
-        self.__user_session.stopwatch.cancelled += lambda _: self.setEnabled(True)
+        ts_svc = time_slice_service
+        ts_svc.time_slice_started += lambda _: self.setEnabled(False)
+        ts_svc.time_slice_finished += lambda _: self.setEnabled(True)
+        ts_svc.time_slice_cancelled += lambda _: self.setEnabled(True)
 
-    def __make_ui(self, tag_repo: TagRepo):
+    def __make_ui(self):
         self.__layout = QtWidgets.QVBoxLayout(self)
         self.__layout.setSpacing(0)
 
@@ -66,7 +65,7 @@ class NewSliceForm(QtWidgets.QWidget):
 
         self.__description_input.setCompleter(self.__completer)
 
-        self.__tag_input = TagDropDown(tag_repo)
+        self.__tag_input = TagDropDown(self.__session, self.__tag_service)
 
         self.__duration_input = QtWidgets.QSpinBox(
             suffix=" min", value=5, singleStep=5, minimum=1, maximum=60
@@ -124,4 +123,4 @@ class NewSliceForm(QtWidgets.QWidget):
             duration=self.__duration_input.value(),
         )
 
-        self.submitted.emit(time_slice)
+        self.__time_slice_service.start_slice(time_slice)

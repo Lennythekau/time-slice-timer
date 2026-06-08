@@ -3,22 +3,29 @@ import datetime
 from PySide6 import QtWidgets
 from PySide6.QtGui import Qt
 
-from tag.repo import TagRepo
-from time_slice.repo import TimeSliceRepo
+from tag.service import TagService
+from time_slice.service import TimeSliceService
+from user_session import UserSession
 
 
 class TodaysTotalsTable(QtWidgets.QTableWidget):
 
-    def __init__(self, time_slice_repo: TimeSliceRepo, tag_repo: TagRepo):
-        self.__time_slice_repo = time_slice_repo
-        self.__tag_repo = tag_repo
+    def __init__(
+        self,
+        user_session: UserSession,
+        tag_service: TagService,
+        time_slice_service: TimeSliceService,
+    ):
 
         super().__init__()
+        self.__session = user_session
+        self.__time_slice_service = time_slice_service
+
         self.__make_ui()
         self.__update_times()
 
-        self.__time_slice_repo.time_slice_added += lambda _: self.__update_times()
-        self.__tag_repo.tags_changed += lambda _: self.__update_times()
+        time_slice_service.time_slice_finished += lambda _: self.__update_times()
+        tag_service.tags_changed += lambda _: self.__update_times()
 
     def __make_ui(self):
         self.horizontalHeader().setVisible(True)
@@ -29,7 +36,7 @@ class TodaysTotalsTable(QtWidgets.QTableWidget):
         self.verticalHeader().setVisible(False)
 
     def __update_times(self):
-        times = self.__time_slice_repo.get_times_by_tag(datetime.date.today())
+        times = self.__time_slice_service.get_times_by_tag()
         self.setRowCount(len(times))
         self.setHorizontalHeaderLabels(["Tag", "Total"])
 

@@ -4,7 +4,7 @@ from typing import Callable
 from lib.event import Event
 
 
-class StopwatchModel:
+class Stopwatch:
     UNSET = -1
 
     def __init__(self, get_time: Callable[[], float] = time.time):
@@ -33,7 +33,7 @@ class StopwatchModel:
         self.__remaining_time: float = time_limit
         self.is_paused = True
         self.is_finished = False
-        self.__previous_start_time: float = StopwatchModel.UNSET
+        self.__previous_start_time: float = Stopwatch.UNSET
 
     def start(self, time_limit: int):
         """
@@ -71,7 +71,7 @@ class StopwatchModel:
 
     def update_time(self):
         time_left = self.__get_remaining_time()
-        if time_left == StopwatchModel.UNSET:
+        if time_left == Stopwatch.UNSET:
             return time_left
 
         if self.is_finished:

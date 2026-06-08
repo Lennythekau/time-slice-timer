@@ -8,16 +8,18 @@ from sqlite_setup import (
     ensure_tables_created,
     register_adapters,
 )
-from stopwatch.controller import StopwatchController
-from stopwatch.model import StopwatchModel
-from tag.controller import TagController
 from tag.repo import TagRepo
+from tag.service import TagService
 from task.adapter import TaskAdapter
-from task.controller import TaskController
+from task.flattened_adapter import FlattenedTaskAdapter
 from task.repo import TaskRepo
-from time_slice.controller import TimeSliceController
+from task.service import TaskService
+from time_slice.form import NewSliceForm
 from time_slice.main_window import TimeSliceWindow
 from time_slice.repo import TimeSliceRepo
+from time_slice.service import TimeSliceService
+from time_slice.stopwatch.model import Stopwatch
+from time_slice.stopwatch.widget import StopwatchWidget
 from user_session import UserSession
 
 
@@ -39,29 +41,33 @@ def main() -> None:
     app.setDesktopFileName(app_info.APP_ID)
 
     # Models
-    stopwatch_model = StopwatchModel()
+    stopwatch_model = Stopwatch()
     user_session = UserSession(stopwatch_model)
 
     # Data
     register_adapters()
     time_slice_repo, tag_repo, task_repo = make_repos()
 
-    # Controllers
-    stopwatch_controller = StopwatchController(stopwatch_model)
-    time_slice_controller = TimeSliceController(user_session, time_slice_repo)
-    tag_view_controller = TagController(tag_repo)
-    task_controller = TaskController(task_repo)
-    task_adapter = TaskAdapter(task_controller)
+    # services
+    time_slice_service = TimeSliceService(user_session, time_slice_repo)
+    tag_service = TagService(user_session, tag_repo)
+    task_service = TaskService(user_session, task_repo)
+    task_adapter = TaskAdapter(user_session, task_service)
+    flattened_adapter = FlattenedTaskAdapter(user_session, task_service, task_adapter)
+
+    # Views
+    new_slice_form = NewSliceForm(
+        user_session, time_slice_service, tag_service, flattened_adapter
+    )
+    stopwatch_widget = StopwatchWidget(user_session)
 
     window = TimeSliceWindow(
         user_session,
-        time_slice_repo,
-        tag_repo,
-        task_repo,
-        stopwatch_controller,
-        time_slice_controller,
-        tag_view_controller,
+        time_slice_service,
+        tag_service,
         task_adapter,
+        new_slice_form,
+        stopwatch_widget,
     )
     window.show()
 

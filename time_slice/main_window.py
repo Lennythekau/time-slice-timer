@@ -3,18 +3,13 @@ from PySide6.QtCore import Slot
 
 import app_info
 from stats.dialog import StatsDialog
-from stopwatch.controller import StopwatchController
-from stopwatch.widget import StopwatchWidget
-from tag.controller import TagController
 from tag.dialog import TagDialog
-from tag.repo import TagRepo
+from tag.service import TagService
 from task.adapter import TaskAdapter
 from task.dialog import TaskDialog
-from task.repo import TaskRepo
-from time_slice.controller import TimeSliceController
 from time_slice.form import NewSliceForm
-from time_slice.model import RunningTimeSlice
-from time_slice.repo import TimeSliceRepo
+from time_slice.service import TimeSliceService
+from time_slice.stopwatch.widget import StopwatchWidget
 from time_slice.times_up_dialog import TimesUpDialog
 from user_session import UserSession
 
@@ -24,24 +19,20 @@ class TimeSliceWindow(QtWidgets.QMainWindow):
     def __init__(
         self,
         user_session: UserSession,
-        time_slice_repo: TimeSliceRepo,
-        tag_repo: TagRepo,
-        task_repo: TaskRepo,
-        stopwatch_controller: StopwatchController,
-        time_slice_controller: TimeSliceController,
-        tag_view_controller: TagController,
+        time_slice_service: TimeSliceService,
+        tag_service: TagService,
         task_adapter: TaskAdapter,
+        new_slice_form: NewSliceForm,
+        stopwatch_widget: StopwatchWidget,
     ):
         super().__init__()
 
-        self.__user_session = user_session
-        self.__time_slice_repo = time_slice_repo
-        self.__tag_repo = tag_repo
-        self.__task_repo = task_repo
-        self.__stopwatch_controller = stopwatch_controller
-        self.__time_slice_controller = time_slice_controller
-        self.__tag_controller = tag_view_controller
+        self.__session = user_session
+        self.__time_slice_service = time_slice_service
+        self.__tag_service = tag_service
         self.__task_adapter = task_adapter
+        self.__new_slice_form = new_slice_form
+        self.__stopwatch_widget = stopwatch_widget
 
         self.__make_ui()
 
@@ -55,8 +46,7 @@ class TimeSliceWindow(QtWidgets.QMainWindow):
             self.__show_task_dialog
         )
 
-        self.__user_session.stopwatch.finished += self.__on_stopwatch_finished
-        self.__user_session.stopwatch.cancelled += self.__on_stopwatch_cancelled
+        self.__time_slice_service.time_slice_finished += self.__on_time_slice_finished
 
     def __make_ui(self):
         self.setWindowTitle(app_info.APP_NAME)
@@ -71,15 +61,9 @@ class TimeSliceWindow(QtWidgets.QMainWindow):
         self.__layout.setContentsMargins(5, 5, 5, 5)
         self.__layout.setSpacing(0)
 
-        self.__new_slice_form = NewSliceForm(
-            self.__user_session, self.__tag_repo, self.__task_repo, self.__task_adapter
+        self.__stopwatch_widget.setEnabled(
+            self.__session.current_time_slice is not None
         )
-        self.__new_slice_form.submitted.connect(self.__on_new_slice_form_submitted)
-
-        self.__stopwatch_widget = StopwatchWidget(
-            self.__user_session.stopwatch, self.__stopwatch_controller
-        )
-        self.__stopwatch_widget.setEnabled(False)
 
         self.__layout.addWidget(self.__new_slice_form)
         self.__layout.addWidget(self.__stopwatch_widget)
@@ -94,19 +78,23 @@ class TimeSliceWindow(QtWidgets.QMainWindow):
     @Slot()
     def __show_tag_dialog(self):
         if self.__tag_dialog is None:
-            self.__tag_dialog = TagDialog(self.__tag_repo, self.__tag_controller)
+            self.__tag_dialog = TagDialog(self.__session, self.__tag_service)
         self.__tag_dialog.open()
 
     @Slot()
     def __show_task_dialog(self):
         if self.__task_dialog is None:
-            self.__task_dialog = TaskDialog(self.__tag_repo, self.__task_adapter)
+            self.__task_dialog = TaskDialog(
+                self.__session, self.__tag_service, self.__task_adapter
+            )
         self.__task_dialog.open()
 
     @Slot()
     def __show_stats_dialog(self):
         if self.__stats_dialog is None:
-            self.__stats_dialog = StatsDialog(self.__time_slice_repo, self.__tag_repo)
+            self.__stats_dialog = StatsDialog(
+                self.__session, self.__tag_service, self.__time_slice_service
+            )
         self.__stats_dialog.open()
 
     def __make_toolbar(self):
@@ -125,19 +113,5 @@ class TimeSliceWindow(QtWidgets.QMainWindow):
         stats_action.triggered.connect(self.__show_stats_dialog)
         self.__toolbar.addAction(stats_action)
 
-    def __update_widget_enabledness(self, is_timer_running: bool):
-        self.__stopwatch_widget.setEnabled(is_timer_running)
-        self.__new_slice_form.setEnabled(not is_timer_running)
-
-    def __on_new_slice_form_submitted(self, slice: RunningTimeSlice):
-        self.__time_slice_controller.start_slice(slice)
-        self.__stopwatch_controller.start(slice)
-        self.__update_widget_enabledness(True)
-
-    def __on_stopwatch_cancelled(self, _):
-        self.__update_widget_enabledness(False)
-
-    def __on_stopwatch_finished(self, _):
-        self.__time_slice_controller.on_slice_finished()
-        self.__update_widget_enabledness(False)
+    def __on_time_slice_finished(self, _):
         TimesUpDialog(self).open()

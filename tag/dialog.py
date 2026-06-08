@@ -1,22 +1,23 @@
 from typing import Literal
 
 from PySide6 import QtWidgets
-from PySide6.QtCore import Slot
+from PySide6.QtCore import Qt, Slot
+from PySide6.QtWidgets import QListWidgetItem
 
-from tag.controller import TagController
-from tag.model import EMPTY_TAG
-from tag.repo import TagRepo
+from tag.model import EMPTY_TAG, Tag
+from tag.service import TagService
+from user_session import UserSession
 
 
 class TagDialog(QtWidgets.QDialog):
     def __init__(
         self,
-        tag_repo: TagRepo,
-        tag_view_controller: TagController,
+        user_session: UserSession,
+        tag_service: TagService,
     ):
         super().__init__()
-        self.__tag_repo = tag_repo
-        self.__tag_view_controller = tag_view_controller
+        self.__user_session = user_session
+        self.__tag_service = tag_service
         self.__mode: Literal["Add"] | Literal["Edit"] = "Add"
 
         self.__BUTTON_ADD_TEXT = "Add"
@@ -34,7 +35,6 @@ class TagDialog(QtWidgets.QDialog):
         self.__tags_list.setSelectionMode(
             QtWidgets.QAbstractItemView.SelectionMode.MultiSelection
         )
-        self.__tags_list.addItems([tag.name for tag in self.__tag_repo.get_tags()])
         self.__tags_list.itemSelectionChanged.connect(self.__selection_changed)
 
         self.__error_message = QtWidgets.QLabel()
@@ -59,6 +59,8 @@ class TagDialog(QtWidgets.QDialog):
         self.__layout.addWidget(self.__tags_list)
         self.__layout.addWidget(self.__error_message)
         self.__layout.addWidget(self.__form)
+
+        self.__update_tags_list()
 
     @Slot()
     def __selection_changed(self):
@@ -89,8 +91,10 @@ class TagDialog(QtWidgets.QDialog):
         @Slot()
         def confirmed_deletion():
             assert self.__selected_item is not None
-            error = self.__tag_view_controller.delete_tag(self.__selected_item.text())
-            if error is None:
+            tag_id: int = self.__selected_item.data(Qt.ItemDataRole.UserRole)
+            error = self.__tag_service.delete_tag(tag_id)
+
+            if error == "":
                 self.__update_tags_list()
             else:
                 self.__display_error(error)
@@ -112,22 +116,25 @@ class TagDialog(QtWidgets.QDialog):
         confirmation_box.accepted.connect(confirmed_deletion)
 
     def __add_tag(self):
-        error = self.__tag_view_controller.add_tag(self.__text_field.text())
-        if error is None:
+        tag, err = self.__tag_service.add_tag(self.__text_field.text())
+        if tag is not None:
             self.__text_field.clear()
             self.__update_tags_list()
         else:
-            self.__display_error(error)
+            self.__display_error(err)
 
     def __edit_tag(self):
         assert self.__selected_item is not None
-        error = self.__tag_view_controller.edit_tag(
-            old_name=self.__selected_item.text(), new_name=self.__text_field.text()
-        )
-        if error is None:
+
+        tag_id: int = self.__selected_item.data(Qt.ItemDataRole.UserRole)
+        new_name = self.__text_field.text()
+
+        new_tag, err = self.__tag_service.edit_tag(tag_id, new_name)
+
+        if new_tag is not None:
             self.__update_tags_list()
         else:
-            self.__display_error(error)
+            self.__display_error(err)
 
     @Slot()
     def __form_button_clicked(self):
@@ -148,9 +155,15 @@ class TagDialog(QtWidgets.QDialog):
         # Clear any error message
         self.__discard_error()
 
-        names = [tag.name for tag in self.__tag_repo.get_tags()]
         self.__tags_list.clear()
-        self.__tags_list.addItems(names)
+
+        # The first tag is always the empty tag
+        tag_ids = list(self.__user_session.tags.keys())[1:]
+
+        for tag_id in tag_ids:
+            item = QListWidgetItem(self.__user_session.tags[tag_id].name)
+            item.setData(Qt.ItemDataRole.UserRole, tag_id)
+            self.__tags_list.addItem(item)
 
     def __start_add_mode(self):
         self.__mode = "Add"

@@ -40,7 +40,7 @@ class TaskRepo:
 
         for row in rows:
             task_id, parent_id, description, tag_id, tag_name = row
-            if tag_id is None:
+            if tag_id == EMPTY_TAG.tag_id:
                 tag = EMPTY_TAG
             else:
                 tag = Tag(tag_id, tag_name)

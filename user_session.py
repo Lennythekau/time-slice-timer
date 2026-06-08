@@ -1,8 +1,15 @@
-from stopwatch.model import StopwatchModel
+from dataclasses import dataclass, field
+
+from tag.model import Tag
+from task.model import Task
 from time_slice.model import RunningTimeSlice
+from time_slice.stopwatch.model import Stopwatch
 
 
+@dataclass
 class UserSession:
-    def __init__(self, stopwatch: StopwatchModel):
-        self.stopwatch = stopwatch
-        self.current_time_slice: RunningTimeSlice | None = None
+    stopwatch: Stopwatch
+    current_time_slice: RunningTimeSlice | None = None
+
+    tags: dict[int, Tag] = field(default_factory=dict)
+    processes: list[Task] = field(default_factory=list)

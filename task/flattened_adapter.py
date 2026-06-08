@@ -5,18 +5,24 @@ from PySide6.QtGui import Qt
 
 from task.adapter import TaskAdapter
 from task.model import Task
-from task.repo import TaskRepo
+from task.service import TaskService
+from user_session import UserSession
 
 
 class FlattenedTaskAdapter(QAbstractListModel):
-    def __init__(self, task_repo: TaskRepo, task_adapter: TaskAdapter) -> None:
+    def __init__(
+        self,
+        user_session: UserSession,
+        task_service: TaskService,
+        task_adapter: TaskAdapter,
+    ) -> None:
         super().__init__()
         self.__task_tree = task_adapter
         self.__tasks = list[Task]()
         self.descriptions = list[str]()
         self.__update()
 
-        task_repo.tasks_changed += lambda _: self.__update()
+        task_service.tasks_changed += lambda _: self.__update()
 
     def __update(self):
         self.descriptions.clear()
