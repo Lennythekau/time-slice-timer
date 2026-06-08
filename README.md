@@ -57,6 +57,8 @@ This app was made entirely for my own purposes, and doesn't care about user frie
 # Planned features:
 - Change search bar to fuzzy search.
 - Improve UX of adding tags
+- Make the empty tag counted in the *Today's totals table.*
+- More stats
 - Workflows
 
 # Reflections
@@ -80,9 +82,9 @@ Regardless of how exactly it's implemented, you want *something* which handles t
 
 Having done some webdev with eg Vue JS, I was used to the 'component' way of thinking: the unit is a UI widget which also has enough logic to be self sufficient, given the correct inputs. Clearly, that didn't really work here. I wasn't familiar with QML, so I had just used the more familiar widget way of working. That unfortunately meant no MVVM, leaving MVC as an obvious alternative.
 
-I tried to obey the classical Smalltalk MVC, but realised that the controller directly mutated the view. That didn't seem particularly elegant. What about web MVC? That seemed quite verbose, hardly more than a wrapper around the repo classes for an app of this scale.
+I tried to obey the classical Smalltalk MVC, but realised that the controller directly mutated the view AND translates UI logic into domain logic. That violates SRP (I don't actually think that's an issue TBH). I tried messing around with eg MVP, Model-View, and all seemed a bit off.
 
-I ended up keeping the terminology, but my app isn't 'true' MVC. I realised that following very specific design patterns isn't always sensible. We definitely still have separation between the view and the model; and maybe some classes in the middle. We get good separation of concerns, without enforcing ceremony.
+My app isn't 'true' MVC. But, I realised that design patterns are meant to be inspirations, rather than exact dogma. We definitely still have separation between the view and the model through 'services' and maybe some other classes in the middle. We get good separation of concerns, without enforcing ceremony.
 
 ### Testing
 
