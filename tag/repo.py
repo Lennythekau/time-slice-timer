@@ -22,11 +22,13 @@ class TagRepo:
         return tag
 
     def edit_tag(self, tag_id: int, new_name: str):
-        with self.make_connection() as connection:
-            cursor = connection.execute(
-                """UPDATE tag SET name=? WHERE tag_id=?""", (new_name, tag_id)
-            )
-        connection.close()
+        try:
+            with self.make_connection() as connection:
+                cursor = connection.execute(
+                    """UPDATE tag SET name=? WHERE tag_id=?""", (new_name, tag_id)
+                )
+        finally:
+            connection.close()
 
         tag_id = cast(int, cursor.lastrowid)
         tag = Tag(tag_id=tag_id, name=new_name)

@@ -69,7 +69,7 @@ class TagService:
 
         except sqlite3.IntegrityError as e:
             if e.sqlite_errorcode == sqlite3.SQLITE_CONSTRAINT_UNIQUE:
-                return None, ""
+                return fail(self.__NAME_NOT_UNIQUE_ERROR)
             return fail(self.__UNEXPECTED_ERROR)
 
     def delete_tag(self, tag_id: int) -> str:
