@@ -40,7 +40,7 @@ class TodaysTotalsTable(QtWidgets.QTableWidget):
         self.setRowCount(len(times))
         self.setHorizontalHeaderLabels(["Tag", "Total"])
 
-        for row_number, (tag, total) in enumerate(times):
+        for row_number, (tag, total) in enumerate(times.items()):
             # Add tag
             tag_table_item = QtWidgets.QTableWidgetItem(tag.name)
             tag_table_item.setFlags(

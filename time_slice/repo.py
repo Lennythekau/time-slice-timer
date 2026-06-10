@@ -65,7 +65,7 @@ class TimeSliceRepo:
 
         return result
 
-    def get_times_by_tag(self, date: datetime.date):
+    def get_times_by_tag(self, date: datetime.date) -> dict[Tag, int]:
         if isinstance(date, datetime.datetime):
             date = date.date()
 
@@ -81,12 +81,22 @@ class TimeSliceRepo:
                 (date,),
             ).fetchall()
 
+            (empty_tag_duration,) = connection.execute(
+                """SELECT SUM(duration) FROM time_slice WHERE tag_id=?""",
+                (EMPTY_TAG.tag_id,),
+            ).fetchone()
+
+            empty_tag_duration = empty_tag_duration or 0
+
         connection.close()
 
         rows = cast(list[tuple[int, str, int]], rows)
 
-        times = []
+        times = {}
+
         for tag_id, name, total in rows:
-            times.append((Tag(tag_id, name), total))
+            times[Tag(tag_id, name)] = total
+
+        times[EMPTY_TAG] = empty_tag_duration
 
         return times

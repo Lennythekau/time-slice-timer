@@ -1,5 +1,6 @@
 from datetime import datetime
 
+from tag.model import EMPTY_TAG
 from tag.repo import TagRepo
 from time_slice.model import RunningTimeSlice
 from time_slice.repo import TimeSliceRepo
@@ -27,11 +28,10 @@ def test_get_times_by_tag(
     slice3 = time_slice_repo.add_slice(RunningTimeSlice("3", tag2, 10), today)
 
     predicted_times_by_tag = {
+        EMPTY_TAG: 0,
         tag1: slice1.duration + slice2.duration,
         tag2: slice3.duration,
     }
 
     actual_times_by_tag = time_slice_repo.get_times_by_tag(today)
-
-    for tag, time in actual_times_by_tag:
-        assert predicted_times_by_tag[tag] == time
+    assert predicted_times_by_tag == actual_times_by_tag

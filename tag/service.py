@@ -41,6 +41,7 @@ class TagService:
 
         return tags_by_id
 
+    # TODO: clean up input (remove whitespace)
     def add_tag(self, name: str) -> TagResult:
         """Returns the tag, and an error, if there was any."""
 
