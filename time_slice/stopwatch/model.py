@@ -1,7 +1,7 @@
 import time
 from typing import Callable
 
-from lib.event import Event
+from lib.event import Event, Event0
 
 
 class Stopwatch:
@@ -20,11 +20,11 @@ class Stopwatch:
         self.__get_time = get_time
 
         self.started = Event[int]()
-        self.paused = Event[None]()
-        self.resumed = Event[None]()
+        self.paused = Event0()
+        self.resumed = Event0()
 
-        self.finished = Event[None]()
-        self.cancelled = Event[None]()
+        self.finished = Event0()
+        self.cancelled = Event0()
 
     def reset(self, time_limit: int = UNSET):
         """
@@ -42,24 +42,24 @@ class Stopwatch:
         self.reset(time_limit)
         self.resume()
 
-        self.started.invoke(time_limit)
+        self.started(time_limit)
 
     def pause(self):
         self.is_paused = True
         time_spent = self.__get_time() - self.__previous_start_time
         self.__remaining_time -= time_spent
 
-        self.paused.invoke(None)
+        self.paused()
 
     def resume(self):
         self.is_paused = False
         self.__previous_start_time = self.__get_time()
 
-        self.resumed.invoke(None)
+        self.resumed()
 
     def cancel(self):
         self.reset()
-        self.cancelled.invoke(None)
+        self.cancelled()
 
     def __get_remaining_time(self) -> float:
         if self.is_paused:
@@ -80,6 +80,6 @@ class Stopwatch:
         if time_left <= 0:
             self.is_paused = True
             self.is_finished = True
-            self.finished.invoke(None)
+            self.finished()
 
         return time_left

@@ -4,11 +4,14 @@ from dataclasses import dataclass
 import pytest
 
 import sqlite_setup
+from tag.model import EMPTY_TAG
 from tag.repo import TagRepo
 from tag.service import TagService
 from task.repo import TaskRepo
 from task.service import TaskService
+from time_slice.model import RunningTimeSlice
 from time_slice.repo import TimeSliceRepo
+from time_slice.service import TimeSliceService
 from time_slice.stopwatch.model import Stopwatch
 from user_session import UserSession
 
@@ -74,6 +77,16 @@ def stopwatch(timer: MockTimer):
 @pytest.fixture
 def user_session(stopwatch: Stopwatch):
     return UserSession(stopwatch)
+
+
+@pytest.fixture
+def running_slice():
+    return RunningTimeSlice("foo", EMPTY_TAG, 1)
+
+
+@pytest.fixture
+def time_slice_service(user_session: UserSession, time_slice_repo: TimeSliceRepo):
+    return TimeSliceService(user_session, time_slice_repo)
 
 
 @pytest.fixture

@@ -39,7 +39,7 @@ def test_get_time_after_ticking(stopwatch: Stopwatch, timer: MockTimer):
 def test_pause_gives_correct_state(stopwatch: Stopwatch, timer: MockTimer):
     paused_triggered = False
 
-    def on_stopwatch_paused(_):
+    def on_stopwatch_paused():
         nonlocal paused_triggered
         paused_triggered = True
 
@@ -76,7 +76,7 @@ def test_pause_ignores_time_ticking(stopwatch: Stopwatch, timer: MockTimer):
 def test_cancel(stopwatch: Stopwatch, timer: MockTimer):
     cancelled_triggered = False
 
-    def on_stopwatch_cancel(_):
+    def on_stopwatch_cancel():
         nonlocal cancelled_triggered
         cancelled_triggered = True
 
@@ -86,7 +86,31 @@ def test_cancel(stopwatch: Stopwatch, timer: MockTimer):
     timer.tick(3)
     stopwatch.cancel()
 
-    assert stopwatch.update_time() == approx(Stopwatch.UNSET)
+    assert stopwatch.update_time() == Stopwatch.UNSET
     assert stopwatch.is_paused
     assert not stopwatch.is_finished
     assert cancelled_triggered
+
+
+def test_finish(stopwatch: Stopwatch, timer: MockTimer):
+    finished_triggered = False
+
+    def on_stopwatch_finish():
+        nonlocal finished_triggered
+        finished_triggered = True
+
+    stopwatch.finished += on_stopwatch_finish
+
+    stopwatch.start(START_TIME)
+
+    timer.tick(START_TIME / 2)
+    stopwatch.update_time()
+    assert not finished_triggered
+
+    timer.tick(START_TIME / 2)
+    stopwatch.update_time()
+
+    timer.tick(0.3)
+    stopwatch.update_time()
+
+    assert finished_triggered

@@ -35,9 +35,15 @@ class NewSliceForm(QtWidgets.QWidget):
         self.__setup_shortcuts()
 
         ts_svc = time_slice_service
-        ts_svc.time_slice_started += lambda _: self.setEnabled(False)
-        ts_svc.time_slice_finished += lambda _: self.setEnabled(True)
-        ts_svc.time_slice_cancelled += lambda _: self.setEnabled(True)
+        ts_svc.slice_started += self.__on_slice_started
+        ts_svc.slice_finished += self.__on_slice_ended
+        ts_svc.slice_cancelled += self.__on_slice_ended
+
+    def __on_slice_started(self, _):
+        self.setEnabled(False)
+
+    def __on_slice_ended(self):
+        self.setEnabled(True)
 
     def __make_ui(self):
         self.__layout = QtWidgets.QVBoxLayout(self)

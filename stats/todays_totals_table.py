@@ -24,8 +24,8 @@ class TodaysTotalsTable(QtWidgets.QTableWidget):
         self.__make_ui()
         self.__update_times()
 
-        time_slice_service.time_slice_finished += lambda _: self.__update_times()
-        tag_service.tags_changed += lambda _: self.__update_times()
+        time_slice_service.slice_finished += self.__update_times
+        tag_service.tags_changed += self.__update_times
 
     def __make_ui(self):
         self.horizontalHeader().setVisible(True)

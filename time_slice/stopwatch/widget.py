@@ -87,7 +87,7 @@ class StopwatchWidget(QtWidgets.QWidget):
             self.__session.stopwatch.pause()
 
     @QtCore.Slot()
-    def __on_resume(self, _):
+    def __on_resume(self):
         # show pause icon
         self.__play_pause_button.setIcon(self.__pause_icon)
 
@@ -97,7 +97,7 @@ class StopwatchWidget(QtWidgets.QWidget):
         self.__poll_timer.start(self.__TIMEOUT_INTERVAL)
 
     @QtCore.Slot()
-    def __on_pause(self, _):
+    def __on_pause(self):
         # show play icon
         self.__play_pause_button.setIcon(self.__play_icon)
 
@@ -111,7 +111,7 @@ class StopwatchWidget(QtWidgets.QWidget):
     def __cancel_button_clicked(self, _):
         self.__session.stopwatch.cancel()
 
-    def __on_cancel(self, _):
+    def __on_cancel(self):
         self.__poll_timer.stop()
 
         # Connection might be None, since we can cancel, while paused,
@@ -121,7 +121,7 @@ class StopwatchWidget(QtWidgets.QWidget):
             self.__poll_timer_connection = None
         self.setEnabled(False)
 
-    def __on_finish(self, _):
+    def __on_finish(self):
         self.__poll_timer.stop()
         if self.__poll_timer.isActive():
             self.__poll_timer.stop()

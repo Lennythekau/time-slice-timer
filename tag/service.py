@@ -1,6 +1,6 @@
 import sqlite3
 
-from lib.event import Event
+from lib.event import Event0
 from tag.model import EMPTY_TAG, Tag
 from tag.repo import TagRepo
 from user_session import UserSession
@@ -25,7 +25,7 @@ class TagService:
 
         self.__session.tags = self.get_tags()
 
-        self.tags_changed = Event[None]()
+        self.tags_changed = Event0()
 
         self.__NAME_EMPTY_ERROR = "Name must not be empty 🦆!"
         self.__NAME_NOT_UNIQUE_ERROR = "Tag name must be unique 🦆!"
@@ -49,7 +49,7 @@ class TagService:
         try:
             tag = self.__repo.add_tag(name)
             self.__session.tags[tag.tag_id] = tag
-            self.tags_changed.invoke(None)
+            self.tags_changed()
             return succeed(tag)
 
         except sqlite3.IntegrityError as e:
@@ -64,7 +64,7 @@ class TagService:
         try:
             tag = self.__repo.edit_tag(tag_id, new_name)
             self.__session.tags[tag_id] = tag
-            self.tags_changed.invoke(None)
+            self.tags_changed()
             return succeed(tag)
 
         except sqlite3.IntegrityError as e:
@@ -79,7 +79,7 @@ class TagService:
             if tag_id in self.__session.tags:
                 self.__session.tags.pop(tag_id)
 
-            self.tags_changed.invoke(None)
+            self.tags_changed()
             return ""
         except:
             return self.__UNEXPECTED_ERROR

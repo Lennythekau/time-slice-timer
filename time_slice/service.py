@@ -1,12 +1,10 @@
 from dataclasses import dataclass, field
 from datetime import date
 
-from lib.event import Event
-from time_slice.model import RunningTimeSlice, TimeSlice
+from lib.event import Event, Event0
+from time_slice.model import RunningTimeSlice
 from time_slice.repo import TimeSliceRepo
 from user_session import UserSession
-
-# TODO: remove event listeners when we aren't listening
 
 
 @dataclass
@@ -14,21 +12,17 @@ class TimeSliceService:
     __session: UserSession
     __repo: TimeSliceRepo
 
-    time_slice_started: Event[RunningTimeSlice] = field(
-        init=False, default_factory=Event
+    slice_started: Event[RunningTimeSlice] = field(
+        init=False, default_factory=Event[RunningTimeSlice]
     )
-    time_slice_paused: Event[None] = field(init=False, default_factory=Event)
-
-    time_slice_cancelled: Event[RunningTimeSlice] = field(
-        init=False, default_factory=Event
-    )
-
-    time_slice_finished: Event[TimeSlice] = field(init=False, default_factory=Event)
+    slice_paused: Event0 = field(init=False, default_factory=Event0)
+    slice_cancelled: Event0 = field(init=False, default_factory=Event0)
+    slice_finished: Event0 = field(init=False, default_factory=Event0)
 
     def __post_init__(self):
-        self.__session.stopwatch.paused += lambda _: self.pause_slice()
-        self.__session.stopwatch.cancelled += lambda _: self.cancel_slice()
-        self.__session.stopwatch.finished += lambda _: self.finish_slice()
+        self.__session.stopwatch.paused += self.pause_slice
+        self.__session.stopwatch.cancelled += self.cancel_slice
+        self.__session.stopwatch.finished += self.finish_slice
 
     def start_slice(self, slice: RunningTimeSlice):
         # We've already started a time slice
@@ -41,32 +35,39 @@ class TimeSliceService:
 
         self.__session.stopwatch.reset()
         self.__session.stopwatch.start(seconds)
-        self.time_slice_started.invoke(slice)
+
+        self.slice_started(slice)
 
     def pause_slice(self):
         if self.__session.current_time_slice is None:
             print("time slice doesn't exist")
             return
 
-        self.time_slice_paused.invoke(None)
+        # We don't need to pause the stopwatch, it's already paused.
+        self.slice_paused()
 
     def cancel_slice(self):
         if self.__session.current_time_slice is None:
             print("time slice already stopped")
             return
 
-        self.time_slice_cancelled.invoke(self.__session.current_time_slice)
         self.__session.current_time_slice = None
+        self.slice_cancelled()
 
     def finish_slice(self):
+
+        # this will happen because we don't remove the event listeners yet...
+        if self.__session.current_time_slice is None:
+            print("time slice doesn't exist")
+            return
+
         running_slice = self.__session.current_time_slice
-        assert running_slice is not None
-        time_slice = self.__repo.add_slice(running_slice)
+        self.__repo.add_slice(running_slice)
 
         # Finished with current time slice, so now there is no current time slice.
         self.__session.current_time_slice = None
 
-        self.time_slice_finished.invoke(time_slice)
+        self.slice_finished()
 
     def get_times_by_tag(self):
         return self.__repo.get_times_by_tag(date.today())

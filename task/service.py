@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 
-from lib.event import Event
+from lib.event import Event0
 from tag.model import Tag
 from task.model import Task, TaskDraft
 from task.repo import TaskRepo
@@ -11,7 +11,7 @@ from user_session import UserSession
 class TaskService:
     __session: UserSession
     task_repo: TaskRepo
-    tasks_changed: Event[None] = field(init=False, default_factory=Event)
+    tasks_changed: Event0 = field(init=False, default_factory=Event0)
 
     def __post_init__(self):
         self.__session.processes = self.task_repo.get_processes()
@@ -33,8 +33,14 @@ class TaskService:
             sink.append(task)
         else:
             sink.insert(draft.index, task)
-        self.tasks_changed.invoke(None)
+        self.tasks_changed()
         return task
+
+    def get_tag(self, task: Task):
+        while task.parent is not None:
+            task = task.parent
+
+        return task.tag
 
     def remove_tasks(self, parent_task: Task | None, start_index: int, count: int):
         source = self.get_children(parent_task)
@@ -44,14 +50,14 @@ class TaskService:
 
         for task in tasks_to_delete:
             self.task_repo.delete_task(task.task_id)
-        self.tasks_changed.invoke(None)
+        self.tasks_changed()
 
     def update_description(self, task: Task, value: str):
         task.description = value
         self.task_repo.update(task)
-        self.tasks_changed.invoke(None)
+        self.tasks_changed()
 
     def update_tag(self, task: Task, value: Tag):
         task.tag = value
         self.task_repo.update(task)
-        self.tasks_changed.invoke(None)
+        self.tasks_changed()

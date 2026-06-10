@@ -9,7 +9,7 @@ class TagDropDown(QComboBox):
         super().__init__(parent)
 
         self.__session = user_session
-        tag_service.tags_changed += lambda _: self.__update_tag_input_items()
+        tag_service.tags_changed += self.__update_tag_input_items
 
         self.__update_tag_input_items()
 

@@ -10,9 +10,6 @@ from task.model import Task, TaskDraft
 class TaskRepo:
     make_connection: ConnectionFactory
 
-    def __post_init__(self):
-        self.tasks_changed = Event[None]()
-
     def delete_task(self, task_id: int):
         """Deletes the whole tree of tasks, rooted at the task with id `task_id`."""
 
@@ -20,7 +17,6 @@ class TaskRepo:
         with self.make_connection() as connection:
             connection.execute("DELETE FROM task WHERE task_id=?", (task_id,))
         connection.close()
-        self.tasks_changed.invoke(None)
 
     def __get_rows(self):
         with self.make_connection() as connection:
@@ -85,7 +81,6 @@ class TaskRepo:
         # Ignore the index part of draft for now.
         task = Task(cursor.lastrowid, *draft[:-1])
         connection.close()
-        self.tasks_changed.invoke(None)
 
         return task
 
@@ -97,5 +92,4 @@ class TaskRepo:
                 (task.description, task.tag.tag_id, task.task_id),
             )
         connection.close()
-        self.tasks_changed.invoke(None)
         return task

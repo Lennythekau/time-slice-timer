@@ -46,7 +46,7 @@ class TimeSliceWindow(QtWidgets.QMainWindow):
             self.__show_task_dialog
         )
 
-        self.__time_slice_service.time_slice_finished += self.__on_time_slice_finished
+        self.__time_slice_service.slice_finished += self.__on_time_slice_finished
 
     def __make_ui(self):
         self.setWindowTitle(app_info.APP_NAME)
@@ -113,5 +113,5 @@ class TimeSliceWindow(QtWidgets.QMainWindow):
         stats_action.triggered.connect(self.__show_stats_dialog)
         self.__toolbar.addAction(stats_action)
 
-    def __on_time_slice_finished(self, _):
+    def __on_time_slice_finished(self):
         TimesUpDialog(self).open()

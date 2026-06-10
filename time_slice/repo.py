@@ -5,16 +5,13 @@ from dataclasses import dataclass
 from typing import cast
 
 from lib.event import Event
-from tag.model import Tag
+from tag.model import EMPTY_TAG, Tag
 from time_slice.model import RunningTimeSlice, TimeSlice
 
 
 @dataclass
 class TimeSliceRepo:
     make_connection: Callable[[], sql.Connection]
-
-    def __post_init__(self):
-        self.time_slice_added = Event[TimeSlice]()
 
     def add_slice(
         self,
@@ -40,8 +37,33 @@ class TimeSliceRepo:
         time_slice_id = cast(int, cursor.lastrowid)
         created_time_slice = TimeSlice(time_slice_id, date, *time_slice)
 
-        self.time_slice_added.invoke(created_time_slice)
         return created_time_slice
+
+    def get_slices_by_date(self, date: datetime.date):
+        if isinstance(date, datetime.datetime):
+            date = date.date()
+
+        with self.make_connection() as connection:
+            rows = connection.execute(
+                """SELECT ts.time_slice_id, ts.created_at, ts.description, ts.tag_id, tag.name, ts.duration
+                   FROM time_slice AS ts 
+                   LEFT JOIN tag ON tag.tag_id = ts.tag_id
+                   WHERE date(ts.created_at)=?
+                """,
+                (date,),
+            ).fetchall()
+        connection.close()
+
+        result: list[TimeSlice] = []
+        for ts_id, created_at, description, tag_id, tag_name, duration in rows:
+            if tag_id == EMPTY_TAG.tag_id:
+                tag = EMPTY_TAG
+            else:
+                tag = Tag(tag_id, tag_name)
+            ts = TimeSlice(ts_id, created_at, description, tag, duration)
+            result.append(ts)
+
+        return result
 
     def get_times_by_tag(self, date: datetime.date):
         if isinstance(date, datetime.datetime):

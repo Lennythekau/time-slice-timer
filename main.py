@@ -22,6 +22,9 @@ from time_slice.stopwatch.model import Stopwatch
 from time_slice.stopwatch.widget import StopwatchWidget
 from user_session import UserSession
 
+# TODO: remove event listeners from all the views when they are destroyed
+# TODO: add logging
+
 
 def make_repos():
     make_connection = create_connection_factory(
