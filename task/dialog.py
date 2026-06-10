@@ -18,7 +18,6 @@ class TaskDialog(QtWidgets.QDialog):
         self.__layout = QtWidgets.QVBoxLayout(self)
 
         self.__task_view = TasksView(user_session, tag_service, task_adapter)
-        task_adapter.set_selection_model(self.__task_view.selectionModel())
 
         self.__layout.addWidget(self.__task_view)
         self.resize(650, 400)

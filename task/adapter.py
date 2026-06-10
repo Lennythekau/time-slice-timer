@@ -2,7 +2,6 @@ from typing import Any, cast, override
 
 from PySide6.QtCore import (
     QAbstractItemModel,
-    QItemSelectionModel,
     QModelIndex,
     QPersistentModelIndex,
     Qt,
@@ -16,224 +15,137 @@ from user_session import UserSession
 type Index = QModelIndex | QPersistentModelIndex
 
 
+# TODO: remove dependency on selection model; instead get it from
 class TaskAdapter(QAbstractItemModel):
     task_created = Signal(QModelIndex)
     task_inserted = Signal(QModelIndex)
 
-    def __init__(self, user_session: UserSession, task_service: TaskService):
+    def __init__(self, user_session: UserSession, task_service: TaskService) -> None:
         super().__init__()
         self.__session = user_session
         self.__service = task_service
 
-    def set_selection_model(self, selection_model: QItemSelectionModel):
-        self.__selection_model = selection_model
+    def __try_move_to_first_process(self):
+        """Attempts to move to the first process in the list of processes."""
 
-    def __select(self, index: QModelIndex):
-        self.__selection_model.setCurrentIndex(
-            index, QItemSelectionModel.SelectionFlag.ClearAndSelect
-        )
-
-    def __try_move_to_first(self):
         if self.__session.processes:
-            index = self.index(0, 0, QModelIndex())
-            self.__select(index)
-            return True
-        return False
+            # No parent, as this is a process. So, parent is an invalid QModelIndex()
+            return self.index(0, 0, QModelIndex())
+        return None
 
     def __try_move_into_subtree(self, current_index: QModelIndex):
-        task: Task = current_index.internalPointer()
+        """Attempts to move into the first subtask of the task at `current_index`."""
+        task = current_index.internalPointer()
+        assert isinstance(task, Task)
+
         if task.sub_tasks:
-            new_index = self.index(0, 0, current_index)
-            self.__select(new_index)
-            return True
-
-        return False
-
-    def __try_move_to_preorder_successor(self, current_index):
-        # If current index is invalid => no sibling at all.
-        while current_index.isValid():
-            parent_index = current_index.parent()
-            candidate_row = current_index.row() + 1
-
-            if candidate_row < self.rowCount(parent_index):
-                new_index = self.index(candidate_row, 0, parent_index)
-                self.__select(new_index)
-                return True
-
-            current_index = current_index.parent()
-        return False
+            # Go to the first subtask
+            return self.index(0, 0, current_index)
+        return None
 
     def __try_move_out_of_subtree(self, current_index: QModelIndex):
         if current_index.row() != 0:
             return False
+
         parent_index = current_index.parent()
-
         if not parent_index.isValid():
-            return False
+            return None
 
-        self.__select(parent_index)
-        return True
+        return parent_index
 
-    def __try_move_to_preorder_predecessor(self, current_index: QModelIndex):
-        # If current index is invalid => no sibling at all.
-        new_index = None
-        while current_index.isValid():
-            parent_index = current_index.parent()
-            candidate_row = current_index.row() - 1
+    def move_to_previous_process(self, current_index: QModelIndex):
+        if not current_index.isValid():
+            return None
 
-            # Current index isn't the first sibling, so we can go to previous one
-            if candidate_row >= 0:
-                new_index = self.index(candidate_row, 0, parent_index)
-                break
-
-            current_index = current_index.parent()
-
-        if new_index is None:
-            return False
-
-        # Go as deep as possible, while the current index has child nodes
-        while self.rowCount(new_index) > 0:
-            new_index = self.index(self.rowCount(new_index) - 1, 0, new_index)
-
-        self.__select(new_index)
-
-    def move_down(self):
-        indices = self.__selection_model.selectedIndexes()
-        # No selection
-        if not indices:
-            # If there are any tasks then go to the first one
-            self.__try_move_to_first()
-            return
-
-        current_index = indices[0]
-
-        # try to move into the current subtree, if the current node is the parent of more nodes
-        if self.__try_move_into_subtree(current_index):
-            return
-
-        # No subtree to go into, so find preorder successor
-        # If there's a sibling, then it will go to that.
-        # If not, it'll keep on asceending til it finds one or fails
-        self.__try_move_to_preorder_successor(current_index)
-
-    def move_up(self):
-        indices = self.__selection_model.selectedIndexes()
-        # No selection
-        if not indices:
-            # If there are tasks then go to the first one
-            self.__try_move_to_first()
-            return
-
-        current_index = indices[0]
-
-        # try to move out ofthe current subtree, if the current node is the first node of its siblings.
-        if self.__try_move_out_of_subtree(current_index):
-            return
-
-        # No subtree to go out of, so find preorder predecessor
-        # If there's a sibling, then it will go to that.
-        # If not, it'll keep on asceending til it finds one (and then go as deep as possible) or fails
-        self.__try_move_to_preorder_predecessor(current_index)
-
-    def move_previous_process(self):
-        indices = self.__selection_model.selectedIndexes()
-        # No selection
-        if not indices:
-            self.__try_move_to_first()
-            return
-
-        current_index = indices[0]
-
-        was_process = not current_index.parent().isValid()
+        is_process = not current_index.parent().isValid()
 
         while current_index.parent().isValid():
             current_index = current_index.parent()
 
         # If we originally did not have a process, then go to the process it belongs to
-        if not was_process:
-            self.__select(current_index)
-            return
+        if not is_process:
+            return current_index
 
-        # Otherwise go to the previous process
+        # Otherwise, we are at a process, so go to the previous process
         candidate_row = current_index.row() - 1
 
         if candidate_row >= 0:
-            # Parent is going to be the root.
-            new_index = self.index(candidate_row, 0, QModelIndex())
-            self.__select(new_index)
+            # Parent is the root.
+            return self.index(candidate_row, 0, QModelIndex())
 
-    def move_next_process(self):
-        indices = self.__selection_model.selectedIndexes()
-        # No selection
-        if not indices:
-            self.__try_move_to_first()
-            return
+        return None
 
-        current_index = indices[0]
+    def move_to_next_process(self, current_index: QModelIndex):
+        if not current_index.isValid():
+            return None
 
         while current_index.parent().isValid():
             current_index = current_index.parent()
 
-        # Otherwise go to the previous process
         candidate_row = current_index.row() + 1
 
         if candidate_row < self.rowCount(current_index.parent()):
             # Parent is going to be the root.
-            new_index = self.index(candidate_row, 0, QModelIndex())
-            self.__select(new_index)
+            return self.index(candidate_row, 0, QModelIndex())
 
-    def create_task(self):
-        indices = self.__selection_model.selectedIndexes()
-        # No selection
-        if not indices:
-            # default preceding_index to be the index of the last process
+        return None
+
+    def move_to_parent(self, current_index: QModelIndex):
+        if not current_index.isValid():
+            return None
+
+        parent_index = self.parent(current_index)
+        if parent_index.isValid():
+            return parent_index
+        return None
+
+    def create_task(self, current_index: QModelIndex):
+        # Not selecting anything, so...
+        if not current_index.isValid():
+            # ...default preceding_index to be the index of the last process
             preceding_index = self.index(
                 len(self.__session.processes) - 1, 0, QModelIndex()
             )
         else:
-            preceding_index = indices[0]
+            preceding_index = current_index
 
         new_row = preceding_index.row() + 1
         self.insertRow(new_row, preceding_index.parent())
         new_index = self.index(new_row, 0, preceding_index.parent())
         self.task_created.emit(new_index)
 
-    def insert_subtask(self):
-        indices = self.__selection_model.selectedIndexes()
+    def insert_subtask(self, current_index: QModelIndex):
         # No selection
-        if not indices:
-            self.create_task()
-            return
+        if not current_index.isValid():
+            self.create_task(current_index)
+            return None
 
-        parent_index = indices[0]
-
+        parent_index = current_index
         new_row = self.rowCount(parent_index)
         self.insertRow(new_row, parent_index)
+
         new_index = self.index(new_row, 0, parent_index)
         self.task_inserted.emit(new_index)
 
-    def delete_task(self):
-        indices = self.__selection_model.selectedIndexes()
-        # No selection
-        if not indices:
-            return
+    def delete_task(self, current_index: QModelIndex):
+        if not current_index.isValid():
+            return None
 
-        index = indices[0]
-        self.removeRow(index.row(), index.parent())
+        self.removeRow(current_index.row(), current_index.parent())
 
-    def shift_focus(self):
-        indices = self.__selection_model.selectedIndexes()
-        if not indices:
-            return
+    def shift_focus(self, current_index: QModelIndex):
+        if not current_index.isValid():
+            return None
 
-        index = indices[0]
-        column_count = self.columnCount(index.parent())
+        column_count = self.columnCount(current_index.parent())
 
+        # If there's nothing to focus to. Only process tasks have a 2nd column.
         if column_count != 2:
             return
 
-        new_column = (index.column() + 1) % column_count
-        self.__select(self.index(index.row(), new_column, index.parent()))
+        new_column = (current_index.column() + 1) % column_count
+        # Same row and parent, just shift to the column.
+        return self.index(current_index.row(), new_column, current_index.parent())
 
     def get_task_from_index(self, index: Index):
         if index.isValid():

@@ -2,7 +2,7 @@ from typing import Callable, override
 
 from PySide6 import QtGui
 from PySide6.QtCore import QModelIndex
-from PySide6.QtGui import QKeySequence, QShortcut
+from PySide6.QtGui import QClipboard, QGuiApplication, QKeySequence, QShortcut
 from PySide6.QtWidgets import QTreeView
 
 from tag.delegate import TagDelegate
@@ -24,29 +24,35 @@ class TasksView(QTreeView):
         self.__session = user_session
 
         self.setModel(adapter)
-        self.adapter = adapter
+        self.__adapter = adapter
 
-        self.adapter.task_created.connect(self.__task_created)
-        self.adapter.task_inserted.connect(self.__task_inserted)
+        self.__adapter.task_created.connect(self.__task_created)
+        self.__adapter.task_inserted.connect(self.__task_inserted)
 
         self.setItemDelegateForColumn(1, TagDelegate(user_session, tag_service))
 
+        # TODO: copying, undo/redo, find.
+
         # Movement
-        self.__add_shortcut("j", adapter.move_down)
-        self.__add_shortcut("k", adapter.move_up)
-        self.__add_shortcut("h", adapter.move_previous_process)
-        self.__add_shortcut("l", adapter.move_next_process)
+        sc = self.__add_shortcut
+        scwi = self.__add_shortcut_with_index
 
-        self.__add_shortcut("w", adapter.shift_focus)
+        sc("j", self.__move_down)
+        sc("k", self.__move_up)
+        scwi("h", adapter.move_to_previous_process)
+        scwi("l", adapter.move_to_next_process)
+        scwi(";", adapter.move_to_parent)
 
-        self.__add_shortcut("Space", self.__toggle_expandedness)
+        sc("y", self.__copy)
+        scwi("w", adapter.shift_focus)
+
+        sc("Space", self.__toggle_expandedness)
 
         # CRUD
-        self.__add_shortcut("Shift+a", adapter.create_task)
-        self.__add_shortcut("i", adapter.insert_subtask)
-        self.__add_shortcut("r", self.__start_edit)
-
-        self.__add_shortcut("x", adapter.delete_task)
+        scwi("Shift+a", adapter.create_task)
+        scwi("i", adapter.insert_subtask)
+        sc("r", self.__start_edit)
+        scwi("x", adapter.delete_task)
 
     @override
     def resizeEvent(self, event: QtGui.QResizeEvent, /) -> None:
@@ -55,30 +61,58 @@ class TasksView(QTreeView):
         self.setColumnWidth(1, self.width() - first_column_width - 2)
         return super().resizeEvent(event)
 
+    def select(self, index: QModelIndex):
+        if index.isValid():
+            self.setCurrentIndex(index)
+
+    def __move_down(self):
+        index = self.indexBelow(self.currentIndex())
+        self.select(index)
+
+    def __move_up(self):
+        index = self.indexAbove(self.currentIndex())
+        self.select(index)
+
+    def __copy(self):
+        index = self.currentIndex()
+        task = self.__adapter.get_task_from_index(index)
+        if task is not None:
+            QGuiApplication.clipboard().setText(task.description)
+
     def __add_shortcut(self, sequence: str, callback: Callable[[], None]):
         key_sequence = QKeySequence(sequence)
         QShortcut(key_sequence, self).activated.connect(callback)
 
+    def __add_shortcut_with_index(
+        self, sequence: str, callback: Callable[[QModelIndex], QModelIndex | None]
+    ):
+        def curried():
+            index = callback(self.currentIndex())
+            if index and index.isValid():
+                self.setCurrentIndex(index)
+
+        self.__add_shortcut(sequence, curried)
+
     def __toggle_expandedness(self):
-        indices = self.selectedIndexes()
-        if not indices:
+        index = self.currentIndex()
+        if not index.isValid():
             return
-        index = indices[0]
+
         if self.isExpanded(index):
             self.collapse(index)
         else:
             self.expand(index)
 
     def __start_edit(self):
-        indices = self.selectedIndexes()
-        if not indices:
+        index = self.currentIndex()
+        if not index.isValid():
             return
 
-        index = indices[0]
         self.edit(index)
 
     def __task_created(self, index: QModelIndex):
         self.edit(index)
+
         self.setCurrentIndex(index)
 
     def __task_inserted(self, index: QModelIndex):
