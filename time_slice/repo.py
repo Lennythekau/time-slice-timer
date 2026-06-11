@@ -82,8 +82,8 @@ class TimeSliceRepo:
             ).fetchall()
 
             (empty_tag_duration,) = connection.execute(
-                """SELECT SUM(duration) FROM time_slice WHERE tag_id=?""",
-                (EMPTY_TAG.tag_id,),
+                """SELECT SUM(duration) FROM time_slice WHERE tag_id=? AND date(created_at)=?""",
+                (EMPTY_TAG.tag_id, date),
             ).fetchone()
 
             empty_tag_duration = empty_tag_duration or 0
