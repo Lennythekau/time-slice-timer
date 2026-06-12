@@ -36,28 +36,28 @@ This app was made entirely for my own purposes, and doesn't care about user frie
 - `Alt+2`: Focus the tag input
 - `Alt+3`: Focus the duration input
 - `Alt+Enter`: Submit the form to create a new time slice.
-- `Alt+s`: Toggle visibility of the total times for today. I'm planning on moving it to a separate tab.
+- `Alt+s`: Show stats menu (today's totals).
 - `Alt+k`: Show task menu
 - `Alt+t`: Show tag menu
 
 ### Task view (Inspired by Vim/Blender)
-- `j`: Move down a task.
-- `k`: Move up a task.
-- `h`: Move to previous process (if currently on a process), or move to the process of the currently selected subtask.
-- `l`: Move to next process. 
-- `w`: Toggle between selecting the description, and the tag (if available).
+- `j`: Move down the task view.
+- `k`: Move up the task view.
+- `h`: Move to the previous process (if currently on a process), or move to the process of the currently selected subtask.
+- `l`: Move to the next process. 
+- `;`: Move to the parent of the current task.
+- `w`: Toggle between selecting the description, and the tag, if available. A tag is assigned to each process. Each task that is a descendent of that process inherits its tag.
 
 - `Space`: toggle the expandedness of current task.
 
 - `i`: Insert subtask, keeping focus on parent task.
-- `Shift+a`: Add a task at the same level as the currently selected task (sibling task).
+- `Shift+a`: Add a task at the same level as the currently selected task (sibling task), shifting focus to it.
 - `x`: Delete selected task
 - `r`: Rename task
+- `y`: Copy the text of a task.
 
 # Planned features:
 - Change search bar to fuzzy search.
-- Improve UX of adding tags
-- Make the empty tag counted in the *Today's totals table.*
 - More stats
 - Workflows
 
