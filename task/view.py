@@ -2,7 +2,7 @@ from typing import Callable, override
 
 from PySide6 import QtGui
 from PySide6.QtCore import QModelIndex
-from PySide6.QtGui import QClipboard, QGuiApplication, QKeySequence, QShortcut
+from PySide6.QtGui import QGuiApplication, QKeySequence, QShortcut
 from PySide6.QtWidgets import QTreeView
 
 from tag.delegate import TagDelegate
@@ -30,6 +30,8 @@ class TasksView(QTreeView):
         self.__adapter.task_inserted.connect(self.__task_inserted)
 
         self.setItemDelegateForColumn(1, TagDelegate(user_session, tag_service))
+
+        self.setDragDropMode(self.DragDropMode.DragDrop)
 
         # TODO: copying, undo/redo, find.
 

@@ -54,6 +54,7 @@ def test_pause_slice_is_idempotent(
     time_slice_service.start_slice(running_slice)
 
     time_slice_service.pause_slice()
+    time_slice_service.slice_paused -= on_time_slice_paused
 
     assert time_slice_paused_fired_counter == 1
 
@@ -69,6 +70,7 @@ def test_pause_slice_is_noop_when_there_is_no_time_slice_running(
 
     time_slice_service.slice_paused += on_time_slice_paused
     time_slice_service.pause_slice()
+    time_slice_service.slice_paused -= on_time_slice_paused
 
     assert time_slice_paused_fired_counter == 0
 
@@ -87,6 +89,7 @@ def test_stopwatch_paused_triggers_time_slice_paused(
     time_slice_service.slice_paused += on_time_slice_paused
     time_slice_service.start_slice(running_slice)
     user_session.stopwatch.pause()
+    time_slice_service.slice_paused -= on_time_slice_paused
 
     assert time_slice_paused_fired
 
@@ -108,6 +111,7 @@ def test_stopwatch_finished_triggers_time_slice_finished(
 
     timer.tick(running_slice.duration * 60 + 2)
     user_session.stopwatch.update_time()
+    time_slice_service.slice_finished -= on_time_slice_finished
 
     assert time_slice_finished_fired
 
@@ -153,5 +157,6 @@ def test_cancel_time_slice_triggers_time_slice_cancelled(
     time_slice_service.slice_cancelled += on_time_slice_cancelled
     time_slice_service.start_slice(running_slice)
     time_slice_service.cancel_slice()
+    time_slice_service.slice_cancelled -= on_time_slice_cancelled
 
     assert time_slice_cancelled_fired

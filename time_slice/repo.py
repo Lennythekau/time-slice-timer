@@ -4,7 +4,6 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from typing import cast
 
-from lib.event import Event
 from tag.model import EMPTY_TAG, Tag
 from time_slice.model import RunningTimeSlice, TimeSlice
 

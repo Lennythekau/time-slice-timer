@@ -56,7 +56,7 @@ def main() -> None:
     tag_service = TagService(user_session, tag_repo)
     task_service = TaskService(user_session, task_repo)
     task_adapter = TaskAdapter(user_session, task_service)
-    flattened_adapter = FlattenedTaskAdapter(user_session, task_service, task_adapter)
+    flattened_adapter = FlattenedTaskAdapter(user_session, task_service)
 
     # Views
     new_slice_form = NewSliceForm(

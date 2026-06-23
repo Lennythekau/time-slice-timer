@@ -2,6 +2,7 @@ import pathlib
 import sqlite3 as sql
 from collections.abc import Callable
 from datetime import date, datetime
+from sqlite3 import Connection
 from typing import Literal
 
 
@@ -62,6 +63,7 @@ def ensure_tables_created(make_connection: ConnectionFactory):
                     description TEXT, 
                     tag_id INTEGER, 
                     duration INTEGER)""")
+
         connection.execute("""CREATE TABLE IF NOT EXISTS tag (
                     tag_id INTEGER PRIMARY KEY, 
                     name TEXT UNIQUE NOT NULL)""")
@@ -70,5 +72,45 @@ def ensure_tables_created(make_connection: ConnectionFactory):
                     task_id INTEGER PRIMARY KEY, 
                     parent_id INTEGER NULL REFERENCES task(task_id) ON DELETE CASCADE, 
                     description TEXT NOT NULL, 
-                    tag_id INTEGER NULL)""")
+                    tag_id INTEGER NULL,
+                    position INTEGER
+                    )""")
+        __ensure_task_table_has_position_column(connection)
+
     connection.close()
+
+
+def __ensure_task_table_has_position_column(connection: Connection):
+
+    # Count how many times the column 'position' appears
+    (count,) = connection.execute(
+        "SELECT COUNT(*) FROM pragma_table_info('task') WHERE name='position'"
+    ).fetchone()
+
+    # the position column exists, so no need to do anything
+    if count > 0:
+        return
+
+    # the position column doesn't exist, so create it.
+    connection.execute("ALTER TABLE task ADD COLUMN position INTEGER")
+
+    parent_ids: list[tuple[int | None]] = connection.execute(
+        "SELECT DISTINCT parent_id FROM task"
+    ).fetchall()
+
+    # The parent id might be none
+    parent_ids.append((None,))
+
+    for (parent_id,) in parent_ids:
+        # get the child task ids with that parent.
+        child_ids: list[tuple[int]] = connection.execute(
+            "SELECT task_id FROM task WHERE (parent_id=? OR (? IS NULL AND parent_id is NULL)) ORDER BY task_id",
+            (parent_id, parent_id),
+        ).fetchall()
+
+        # set the position to be the relative order of their task ids
+        for position, (child_id,) in enumerate(child_ids):
+            connection.execute(
+                "UPDATE task SET position=? WHERE task_id=?",
+                (position, child_id),
+            )

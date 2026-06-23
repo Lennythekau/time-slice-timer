@@ -14,11 +14,9 @@ class FlattenedTaskAdapter(QAbstractListModel):
         self,
         user_session: UserSession,
         task_service: TaskService,
-        task_adapter: TaskAdapter,
     ) -> None:
         super().__init__()
 
-        self.__task_tree = task_adapter
         self.__task_service = task_service
 
         self.__tasks = list[Task]()
@@ -42,14 +40,11 @@ class FlattenedTaskAdapter(QAbstractListModel):
         task: Task = self.__tasks[index.row()]
         return self.__task_service.get_tag(task).name
 
-    def __dfs(self, index: QModelIndex = QModelIndex()):
-        for row in range(self.__task_tree.rowCount(index)):
-            child_index = self.__task_tree.index(row, 0, index)
-
-            task: Task = child_index.internalPointer()
-            self.descriptions.append(task.description)
-            self.__tasks.append(task)
-            self.__dfs(child_index)
+    def __dfs(self, task: Task | None = None):
+        for child in self.__task_service.get_children(task):
+            self.descriptions.append(child.description)
+            self.__tasks.append(child)
+            self.__dfs(child)
 
     @override
     def rowCount(self, parent: Any = QModelIndex()):  # type: ignore[override]

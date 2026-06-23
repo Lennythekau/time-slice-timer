@@ -1,7 +1,12 @@
-from typing import Any, cast, override
+import ctypes
+from pprint import pformat
+from typing import Any, Sequence, cast, override
 
 from PySide6.QtCore import (
     QAbstractItemModel,
+    QByteArray,
+    QDataStream,
+    QMimeData,
     QModelIndex,
     QPersistentModelIndex,
     Qt,
@@ -14,8 +19,11 @@ from user_session import UserSession
 
 type Index = QModelIndex | QPersistentModelIndex
 
+MIME_TYPE = "application/time-slice"
 
-# TODO: remove dependency on selection model; instead get it from
+# TODO: unfold task if something is dragged into it, potentially focus on the newly dropped task.
+
+
 class TaskAdapter(QAbstractItemModel):
     task_created = Signal(QModelIndex)
     task_inserted = Signal(QModelIndex)
@@ -24,6 +32,7 @@ class TaskAdapter(QAbstractItemModel):
         super().__init__()
         self.__session = user_session
         self.__service = task_service
+        self.__dragged_index: Index | None = None
 
     def __try_move_to_first_process(self):
         """Attempts to move to the first process in the list of processes."""
@@ -148,9 +157,7 @@ class TaskAdapter(QAbstractItemModel):
         return self.index(current_index.row(), new_column, current_index.parent())
 
     def get_task_from_index(self, index: Index):
-        if index.isValid():
-            return cast(Task, index.internalPointer())
-        return None
+        return cast(Task | None, index.internalPointer())
 
     @override
     def insertRows(self, row: int, count: int, parent: Index = QModelIndex()) -> bool:
@@ -160,7 +167,7 @@ class TaskAdapter(QAbstractItemModel):
         self.beginInsertRows(parent, row, row)
 
         parent_task = self.get_task_from_index(parent)
-        self.__service.create_task(TaskDraft(parent_task, index=row))
+        self.__service.create_task(TaskDraft(parent_task, position=row))
 
         self.endInsertRows()
         return True
@@ -181,6 +188,8 @@ class TaskAdapter(QAbstractItemModel):
             Qt.ItemFlag.ItemIsSelectable
             | Qt.ItemFlag.ItemIsEnabled
             | Qt.ItemFlag.ItemIsEditable
+            | Qt.ItemFlag.ItemIsDragEnabled
+            | Qt.ItemFlag.ItemIsDropEnabled
         )
 
     @override
@@ -213,9 +222,10 @@ class TaskAdapter(QAbstractItemModel):
 
     @override
     def columnCount(self, parent: Index = QModelIndex()) -> int:
-        if parent.isValid():
-            return 1
-        return 2
+        task = self.get_task_from_index(parent)
+        if task is None:
+            return 2
+        return 1
 
     @override
     def rowCount(self, parent: Index = QModelIndex()) -> int:
@@ -276,3 +286,100 @@ class TaskAdapter(QAbstractItemModel):
             return "Task"
         if section == 1:
             return "Tag"
+
+    @override
+    def mimeData(self, indexes: Sequence[QModelIndex]) -> QMimeData:
+        # One index for column 1, one index for column 2 potentially
+        index = indexes[0]
+        self.__dragged_index = index
+        print(f"DRAGGED INDEX: {index.row()}, {index.column()}")
+
+        task = self.get_task_from_index(index)
+        assert task is not None
+
+        data = QMimeData()
+        encoded_data = QByteArray()
+        stream = QDataStream(encoded_data, QDataStream.OpenModeFlag.WriteOnly)
+        stream.writeInt64(id(task))
+        data.setData(MIME_TYPE, encoded_data)
+        return data
+
+    @override
+    def mimeTypes(self):
+        return [MIME_TYPE]
+
+    @override
+    def dropMimeData(
+        self,
+        data: QMimeData,
+        action: Qt.DropAction,
+        row: int,
+        column: int,
+        parent: Index,
+    ):
+        # see self.canDropMimeData for handling of no-op and invalid cases.
+
+        assert self.__dragged_index is not None
+        old_parent_index = self.__dragged_index.parent()
+
+        # get the dragged task.
+        encoded_data = data.data(MIME_TYPE)
+        stream = QDataStream(encoded_data, QDataStream.OpenModeFlag.ReadOnly)
+        task_addr = stream.readInt64()
+        task = ctypes.cast(task_addr, ctypes.py_object).value
+        assert isinstance(task, Task)
+
+        print("🚀" * 10)
+        print(
+            f"START drop(\n- task={pformat(task)},\n- {row=}, {column=},\n- parent={pformat(parent.internalPointer())})"
+        )
+
+        if row < 0:
+            row = self.rowCount(parent)
+            print(f"- Dropped on parent => {row=}")
+
+        new_parent_task = self.get_task_from_index(parent)
+        print(f"- new_parent_task={pformat(new_parent_task)}")
+
+        self.beginMoveRows(old_parent_index, task.position, task.position, parent, row)
+
+        self.__service.move_task(task, new_parent_task, row)
+
+        self.endMoveRows()
+        self.__dragged_index = None
+
+        print("END drop")
+        print("🏁" * 10)
+
+        return True
+
+    @override
+    def canDropMimeData(
+        self,
+        data: QMimeData,
+        action: Qt.DropAction,
+        row: int,
+        column: int,
+        parent: Index,
+    ):
+        assert self.__dragged_index is not None
+        task = self.get_task_from_index(self.__dragged_index)
+        new_parent_task = self.get_task_from_index(parent)
+
+        assert task is not None
+        if row < 0:
+            if parent == self.__dragged_index.parent():
+                row = self.rowCount(parent)
+
+        return self.__service.can_move(task, new_parent_task, row)
+
+    @override
+    def supportedDropActions(self):
+        # Although we actually want to move tasks, just as in a move action,
+        # Move action actually calls removeRows on the original location of the task,
+        # which calls the service, which calls the repo to remove the task from the repo.
+        # But we don't actually want the task removed; we just want to adjust its parent field
+        # And the affected tasks' positions (also the implementation of our parent method)
+        # means that when removeRows is called, the parent index passed in will be the new parent,
+        # not the old one.
+        return Qt.DropAction.CopyAction
