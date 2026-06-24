@@ -99,3 +99,16 @@ class TimeSliceRepo:
         times[EMPTY_TAG] = empty_tag_duration
 
         return times
+
+    def get_total_time(self, date: datetime.date) -> int:
+        if isinstance(date, datetime.datetime):
+            date = date.date()
+
+        with self.make_connection() as connection:
+            (total,) = connection.execute(
+                "SELECT SUM(duration) FROM time_slice WHERE date(created_at)=?", (date,)
+            ).fetchone()
+
+        connection.close()
+
+        return total or 0

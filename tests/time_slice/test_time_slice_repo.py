@@ -16,7 +16,7 @@ def test_add_slice(time_slice_repo: TimeSliceRepo, tag_repo: TagRepo, today: dat
     assert time_slice.date == today
 
 
-def test_get_times_by_tag(
+def test_get_times_by_tag_and_total(
     time_slice_repo: TimeSliceRepo, tag_repo: TagRepo, today: datetime
 ):
 
@@ -35,3 +35,4 @@ def test_get_times_by_tag(
 
     actual_times_by_tag = time_slice_repo.get_times_by_tag(today)
     assert predicted_times_by_tag == actual_times_by_tag
+    assert sum(predicted_times_by_tag.values()) == time_slice_repo.get_total_time(today)

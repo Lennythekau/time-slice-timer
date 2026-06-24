@@ -71,3 +71,6 @@ class TimeSliceService:
 
     def get_times_by_tag(self):
         return self.__repo.get_times_by_tag(date.today())
+
+    def get_total_time(self):
+        return self.__repo.get_total_time(date.today())
